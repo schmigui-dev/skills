@@ -17,4 +17,4 @@ Arguments: $ARGUMENTS
 When the user picks a number:
 - Show the full note, then discuss/analyze it with them as a normal conversation.
 - When the discussion seems resolved (question answered, decision made, or user moves on), ask: `remove #N from parked? (y/n)`.
-- On yes: delete that line from `~/.claude/parked.md` (leave `next-id` untouched) and reply `removed #N`.
+- On yes: run `bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" remove N` and reply with its output (`removed #N`). Do not edit the file yourself.

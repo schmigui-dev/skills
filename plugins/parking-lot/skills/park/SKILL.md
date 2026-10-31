@@ -14,7 +14,7 @@ If $ARGUMENTS is empty, reply `nothing to park — usage: /park "note"` and stop
 Otherwise run this one command, with the note verbatim between the heredoc markers. Do not read `~/.claude/parked.md` first. The script assigns the ID under a lock and appends the line.
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/park.sh" <<'PARKED_NOTE'
+bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" add <<'PARKED_NOTE'
 <note verbatim>
 PARKED_NOTE
 ```

@@ -46,7 +46,7 @@ Notes live in `~/.claude/parked.md`, one per line. It's plain Markdown, so you c
 
 IDs are never reused until you run `/reindexpark`.
 
-`/park` appends through `scripts/park.sh`, which takes a lock, so parallel sessions never hand out the same ID. Set `PARKED_FILE` to use a different file.
+Every command that changes the list goes through `scripts/park.sh`, which takes a lock and writes atomically, so parallel sessions never share an ID or overwrite each other's notes. Set `PARKED_FILE` to use a different file.
 
 ## License
 
