@@ -3,7 +3,7 @@
 Park an idea or question in two seconds without derailing what you're doing. Come back to it later.
 
 ```text
-/park "max upload size for a Worker endpoint? AWS API Gateway caps at ~10MB"
+/park "check if the retry logic also covers webhook timeouts"
 parked #12
 ```
 
