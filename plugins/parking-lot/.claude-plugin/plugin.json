@@ -1,0 +1,13 @@
+{
+  "name": "parking-lot",
+  "version": "0.1.0",
+  "description": "Park ideas and questions mid-task, then come back later to discuss them, or edit, merge, renumber, and remove them.",
+  "author": {
+    "name": "Guillermo Schmithalter",
+    "url": "https://github.com/schmigui-dev"
+  },
+  "homepage": "https://github.com/schmigui-dev/skills/tree/main/plugins/parking-lot",
+  "repository": "https://github.com/schmigui-dev/skills",
+  "license": "MIT",
+  "keywords": ["notes", "ideas", "workflow", "productivity"]
+}

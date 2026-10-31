@@ -1,0 +1,15 @@
+{
+  "name": "schmigui",
+  "owner": {
+    "name": "Guillermo Schmithalter",
+    "url": "https://github.com/schmigui-dev"
+  },
+  "description": "Claude Code plugins by schmigui.",
+  "plugins": [
+    {
+      "name": "parking-lot",
+      "source": "./plugins/parking-lot",
+      "description": "Park ideas and questions mid-task, then come back later to discuss them, or edit, merge, renumber, and remove them."
+    }
+  ]
+}
