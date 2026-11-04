@@ -1,0 +1,13 @@
+{
+  "name": "same-page",
+  "version": "0.1.0",
+  "description": "Get code and business on the same page. Build a domain glossary from any business doc or code, check code for drift, translate requests into domain terms, verify business rules are tested, and rename terms safely.",
+  "author": {
+    "name": "Guillermo Schmithalter",
+    "url": "https://github.com/schmigui-dev"
+  },
+  "homepage": "https://github.com/schmigui-dev/skills/tree/main/plugins/same-page",
+  "repository": "https://github.com/schmigui-dev/skills",
+  "license": "MIT",
+  "keywords": ["domain-driven-design", "ubiquitous-language", "glossary", "naming", "verification", "agents"]
+}
