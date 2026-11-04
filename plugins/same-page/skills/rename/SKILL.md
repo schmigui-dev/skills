@@ -7,13 +7,19 @@ argument-hint: "<old> <new>"
 
 Rename the domain term: $ARGUMENTS
 
-Parse `$ARGUMENTS` as `<old> <new>`. If either is missing, ask for it and stop. Never invent the new name.
+Parse `$ARGUMENTS` as `<old> <new>`. Terms can be several words: use quotes when given (`"Propuesta de turno" "Plan de turnos"`). With more than two unquoted words, the split is ambiguous: state your best reading (matching `<old>` against glossary terms) and ask the user to confirm before anything else. If either term is missing, ask for it and stop. Never invent the new name.
 
 Renaming a domain term isn't cosmetic. "Completed" may drive reports, permissions, analytics and agent behavior. Your job is to find every place the concept lives, separate it from look-alikes, show the impact, and change things only once the user approves.
 
 ## 1. Load the glossary
 
-Look for `docs/domain/glossary.md`, then any glossary-like file. Find the entry for `<old>`, matching on the business term, the Code term or the Code names. Note its context, Code names, Avoid list, and Not the same as.
+**Finding the glossary** (the same order in every `/same-page` command):
+1. `docs/domain/glossary.md`, if it exists.
+2. Otherwise, files named `glossary.md`, `GLOSSARY.md` or `ubiquitous-language.md` (any case) anywhere in the repo, skipping `node_modules`, `vendor` and `.git`. Exactly one → use it where it is. **Several → list them, ask which one to use, and stop until the user answers.**
+
+The glossary's field labels are always the English template labels (`Code term`, `Code names`, `Avoid`, `Not the same as`, `Rules`, `Examples`, `Status`, `Sources`, `Open questions`, `Code location`, `Business language`, `Code language`). Status values are `confirmed` or `draft`.
+
+Find the entry for `<old>`, matching on the business term, the Code term or the Code names. Note its context, Code names, Avoid list, and Not the same as.
 
 - If `<new>` is on the term's **Avoid** list, or is another term's name, say so prominently: the rename would go against the agreed language.
 - No glossary: continue from the code, and say the impact report can't separate meanings as reliably.
@@ -52,6 +58,7 @@ For every hit, decide: is this the **same concept**, or a **different meaning** 
 
 **Do not rename (different meaning):** `ShiftProposal`, `proposeShift` (Staffing: Propuesta de turno)
 **Risky:** persisted values, public API, analytics/report names, external consumers
+**Glossary on apply:** <exact entry changes: heading or Code term/Code names; `<new>` removed from Avoid; `<old>` added to Avoid>
 
 **Questions:**
 1. Is the meaning changing, or only the name?
@@ -65,5 +72,5 @@ Then stop and wait for answers.
 - If the meaning changes, update the glossary definition with the user first.
 - Rename code, file names, tests, UI copy, docs and tool definitions in one consistent pass.
 - **DB and public API:** describe the migration or deprecation path (new table or column plus a data migration, alias routes during the transition). Write a migration file or alias route only with a separate, explicit approval. **Never run migrations.**
-- Update the glossary: the new name in the heading, Code term or Code names as appropriate, and the old name added to **Avoid**.
+- Update the glossary for the side being renamed. **Business term:** change the entry heading. **Code term:** change Code term and Code names, and leave the heading alone. In both cases, **remove `<new>` from Avoid** if it was there, and add `<old>` to Avoid.
 - Afterwards, run the project's tests if they exist, and suggest `/same-page:check` on the diff.

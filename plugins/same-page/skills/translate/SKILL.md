@@ -13,7 +13,13 @@ People describe work in their own words. Code is written in glossary terms, ofte
 
 ## 1. Load the glossary
 
-Look for `docs/domain/glossary.md`, then any glossary-like file in the repo. Read the business and code languages, and each term's Code term, Code names, Avoid, Rules, Status, and Open questions.
+**Finding the glossary** (the same order in every `/same-page` command):
+1. `docs/domain/glossary.md`, if it exists.
+2. Otherwise, files named `glossary.md`, `GLOSSARY.md` or `ubiquitous-language.md` (any case) anywhere in the repo, skipping `node_modules`, `vendor` and `.git`. Exactly one → use it where it is. **Several → list them, ask which one to use, and stop until the user answers.**
+
+The glossary's field labels are always the English template labels (`Code term`, `Code names`, `Avoid`, `Not the same as`, `Rules`, `Examples`, `Status`, `Sources`, `Open questions`, `Code location`, `Business language`, `Code language`). Status values are `confirmed` or `draft`.
+
+Read the business and code languages, and each term's Code term, Code names, Avoid, Rules, Status, and Open questions.
 
 **No glossary found:** say so and suggest `/same-page:glossary`, then keep going using the code alone (types, routes, function names) to map terms. Mark those mappings as inferred from code.
 

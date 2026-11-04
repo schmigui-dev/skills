@@ -11,7 +11,13 @@ Code should speak the glossary's language. When it doesn't, agents and people tr
 
 ## 1. Load the glossary
 
-Look for `docs/domain/glossary.md`, then any glossary-like file in the repo (`GLOSSARY.md`, `glossary.md`, `ubiquitous-language.md`, `docs/domain/*`). Use it where it is. Never suggest moving or reformatting it.
+**Finding the glossary** (the same order in every `/same-page` command):
+1. `docs/domain/glossary.md`, if it exists.
+2. Otherwise, files named `glossary.md`, `GLOSSARY.md` or `ubiquitous-language.md` (any case) anywhere in the repo, skipping `node_modules`, `vendor` and `.git`. Exactly one → use it where it is. **Several → list them, ask which one to use, and stop until the user answers.**
+
+The glossary's field labels are always the English template labels (`Code term`, `Code names`, `Avoid`, `Not the same as`, `Rules`, `Examples`, `Status`, `Sources`, `Open questions`, `Code location`, `Business language`, `Code language`). Status values are `confirmed` or `draft`.
+
+Use it where it is. Never suggest moving or reformatting it.
 
 **No glossary found:** say so, offer to run `/same-page:glossary` first, and **stop**. Don't guess the domain language from the code.
 
@@ -19,7 +25,7 @@ From the glossary, take: the business and code languages; each context's **Code 
 
 ## 2. Pick the target
 
-- **No argument:** the current uncommitted diff. That's `git diff HEAD` (staged and unstaged) plus untracked files from `git status --porcelain`. Check only the changed lines and new files. **If the diff is empty**, say so and ask what to check (a file, folder, or git ref). Don't fall back to scanning the repo.
+- **No argument:** the current uncommitted diff. That's `git diff HEAD` (staged and unstaged) plus untracked files from `git status --porcelain`. Check only the changed lines and new files. **If the diff is empty**, say so and ask what to check (a file, folder, or git ref). Don't fall back to scanning the repo. **If git can't run** (or this isn't a git repo), say so. Use the session's git status, if you have one, only for the list of changed files. Since you can't see changed lines, label findings in those files as "may be pre-existing" unless you can tell they're new.
 - **A file or folder:** check all of it.
 - **A git ref or range** (`main`, `main..HEAD`, a PR branch): check that diff.
 

@@ -6,6 +6,13 @@ set -euo pipefail
 variant=${1:?variant required}
 here="$(cd "$(dirname "$0")" && pwd)"
 
+# Only ever run inside an empty eval workspace: never copy the fixture or set
+# a fixture git identity inside a real repo.
+if [ -e .git ] || [ -n "$(ls -A . 2>/dev/null)" ]; then
+  echo "setup.sh: refusing to run in a non-empty directory ($(pwd))" >&2
+  exit 1
+fi
+
 cp -R "$here/catering/." .
 git init -q
 git config user.email fixture@example.com
@@ -33,6 +40,14 @@ TS
   no-glossary)
     git rm -q docs/domain/glossary.md
     git commit -q -m "remove glossary"
+    ;;
+  two-glossaries)
+    git mv docs/domain/glossary.md GLOSSARY.md
+    cp GLOSSARY.md docs/ubiquitous-language.md
+    git add -A && git commit -q -m "two glossaries"
+    ;;
+  diff-tracked)
+    sed -i '' 's/return c.json({ ok: true });/return c.json({ ok: true, presupuestoId: c.req.param("id") });/' src/proposals/api.ts
     ;;
   root-glossary)
     git mv docs/domain/glossary.md GLOSSARY.md

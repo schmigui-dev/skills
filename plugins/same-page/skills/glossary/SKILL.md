@@ -11,7 +11,13 @@ The glossary is the shared language between the business and the code. It's also
 
 ## 1. Find the glossary
 
-Look for an existing glossary: `docs/domain/glossary.md` first, then any file named like `glossary`, `GLOSSARY`, `ubiquitous-language`, or `domain` in the repo. If one exists, load it and use it where it is, in its format. Don't move or restructure it unless the user asks. If none exists, you'll propose a new one at `docs/domain/glossary.md`.
+**Finding the glossary** (the same order in every `/same-page` command):
+1. `docs/domain/glossary.md`, if it exists.
+2. Otherwise, files named `glossary.md`, `GLOSSARY.md` or `ubiquitous-language.md` (any case) anywhere in the repo, skipping `node_modules`, `vendor` and `.git`. Exactly one → use it where it is. **Several → list them, ask which one to use, and stop until the user answers.**
+
+The glossary's field labels are always the English template labels (`Code term`, `Code names`, `Avoid`, `Not the same as`, `Rules`, `Examples`, `Status`, `Sources`, `Open questions`, `Code location`, `Business language`, `Code language`). Status values are `confirmed` or `draft`.
+
+If one exists, load it and use it where it is. Don't move or restructure it unless the user asks. If none exists, you'll propose a new one at `docs/domain/glossary.md`.
 
 ## 2. Languages (only if not recorded)
 
@@ -99,6 +105,7 @@ Then ask about the ambiguous items and conflicts **one question at a time**, sta
 - **Open questions:** ...
 ```
 
+- **Keep the field labels and Status values exactly as in the template, in English,** in your proposal and in the file, whatever language you reply in or write definitions in. Other `/same-page` commands read these labels.
 - A single context (`## Context: Main`) is fine for a small project. Add contexts only where words really change meaning.
 - **Code location** links a context to folders or globs, so other commands know which context a file belongs to.
 - **Avoid** applies only inside its own context.
