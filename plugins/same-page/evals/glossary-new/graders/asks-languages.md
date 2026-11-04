@@ -3,4 +3,4 @@ type: llm
 weight: 1
 ---
 
-The agent asks the user what language the business uses (business language) before or as its first question. For the code language it states it detected English from the existing code and asks the user to confirm, rather than asking blindly with no detection.
+The response deals with the two languages explicitly. It states a guess for the business language (e.g. Spanish, from the docs) and asks the user to confirm it. It also says it detected English as the code language from the existing identifiers, rather than asking about the code language with no detection.
