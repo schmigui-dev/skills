@@ -3,4 +3,6 @@ type: llm
 weight: 1
 ---
 
-The response deals with the two languages explicitly. It states a guess for the business language (e.g. Spanish, from the docs) and asks the user to confirm it. It also says it detected English as the code language from the existing identifiers, rather than asking about the code language with no detection.
+Two things must both be true:
+1. The response asks the user to confirm the business language (for example "is Spanish the language your team/customers use?").
+2. The response says the code is in English, based on the existing code (for example "the code identifiers are in English").

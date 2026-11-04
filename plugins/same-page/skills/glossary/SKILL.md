@@ -56,7 +56,7 @@ Classify every candidate:
 
 Then look for trouble:
 
-- **Synonym clusters:** different words for one concept (`quote`/`proposal`/`offer`, or business-language synonyms like cotización/presupuesto). Suggest which term to keep and which go under **Avoid**, but it's the user's call: every synonym cluster is a question in step 7, because they may really be different things.
+- **Synonym clusters:** different words for one concept (`quote`/`proposal`/`offer`, or business-language synonyms like cotización/presupuesto). Suggest which term to keep and which go under **Avoid**, but it's the user's call: every synonym cluster is a question in step 7, because they may really be different things. This covers code too: if code names one concept with different words (`Proposal` class, `calculateQuoteTotal`, `/quotes` route, "Confirm offer" label), name the cluster explicitly (`Proposal` / `Quote` / `Offer`). Don't list the off-words as plain Code names. List them as drift until the user picks.
 - **One word, two meanings:** the same word used for different concepts, especially across contexts. Propose separate entries or contexts.
 - **Translation map:** for each business term, find its code term and code names when the code exists (e.g. presupuesto ↔ `Proposal` ↔ `acceptProposal`).
 
