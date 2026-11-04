@@ -27,6 +27,30 @@ Commands are namespaced as `/no-surrender:<command>`.
 
 All commands run only when you type them. Claude never invokes them on its own.
 
+## Stop guard
+
+Commands only help if you remember to run them, and you stop remembering at exactly the moment you've started to drift. So the plugin also installs a `Stop` hook that makes the two most important checks automatic.
+
+When Claude changed files during a turn (with `Edit`, `Write`, `MultiEdit`, or `NotebookEdit`), it can't finish until its final message ends with:
+
+- **`## Evidence`:** the checks it actually ran, with verbatim output, what each proved and didn't prove, and a verdict.
+- **`## Decisions`:** every choice you didn't specify, with "needs your call" items first.
+
+If a section is missing, the hook sends Claude back once to add it. Turns that change no files (questions, chat, research) finish normally.
+
+**Limits:**
+- The hook blocks at most once per stop, so it can never trap a session in a loop.
+- It fails open: if `jq` or the transcript is unavailable, Claude stops normally.
+- File changes made only through `Bash` (`sed`, scripts) aren't detected.
+
+**Turn it off** for a project by adding this to `.claude/settings.json`:
+
+```json
+{ "env": { "NO_SURRENDER_STOP_GUARD": "off" } }
+```
+
+Set it in your shell to turn it off everywhere.
+
 ## A typical loop
 
 ```text
