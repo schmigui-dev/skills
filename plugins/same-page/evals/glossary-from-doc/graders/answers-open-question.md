@@ -3,4 +3,4 @@ type: llm
 weight: 1
 ---
 
-The response notes that the doc's sentence 'una reserva se confirma cuando se paga la seña' answers (or relates to) the open question on Reserva, and proposes updating Reserva as draft / asks the user to confirm rather than marking it confirmed.
+The response connects the doc's sentence "una reserva se confirma cuando se paga la seña" to Reserva's open question (it answers or relates to it). It passes if Reserva's proposed update stays draft (or is otherwise left for the user to confirm). It fails only if the response marks Reserva or its new rule as confirmed.
