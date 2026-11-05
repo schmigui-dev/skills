@@ -1,0 +1,4 @@
+schema_version: "1.0"
+name: go-no-go-two-missions
+context:
+  scaffold_script: scaffold.sh

@@ -31,7 +31,7 @@ evals/
     graders/*.md     llm graders (frontmatter type: llm, weight)
 ```
 
-Variants: `clean` (baseline), `parked` (parking lot + a landed mission), `recommend` (`config.md` with `autonomy: recommend`). Later tasks add more.
+Variants: `clean` (baseline), `parked` (parking lot + a landed mission), `recommend` (`config.md` with `autonomy: recommend`), `landed-gated` (landed, verified saved-carts mission with uncommitted work, `autonomy: push`, parked crew questions #2 and #3 open), `landed-clean` (same at `autonomy: commit`, crew questions answered), `two-missions` (`landed-clean` plus a wishlist mission in flight). Later tasks add more.
 
 ## Scaffold mechanics (verified in same-page)
 
