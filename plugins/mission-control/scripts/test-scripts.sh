@@ -35,7 +35,8 @@ test_add_crew() {
 
 test_crew_requires_mission() {
   export PARKED_FILE="$PWD/p.md"
-  if echo "x" | bash "$PARK" add --crew engineer-1 2>/dev/null; then fail "exit 0" || return 1; fi
+  local rc=0; echo "x" | bash "$PARK" add --crew engineer-1 2>/dev/null || rc=$?
+  [ "$rc" = 1 ] || fail "exit $rc, want 1" || return 1
   [ ! -e p.md ] || ! grep -q '^- #' p.md || fail "wrote a note" || return 1
 }
 
@@ -78,12 +79,83 @@ test_remove() {
   echo "x" | bash "$PARK" add >/dev/null
   local out; out="$(bash "$PARK" remove 1 9)"
   [ "$out" = "$(printf 'removed #1\n#9 not found')" ] || fail "got '$out'" || return 1
+  ! grep -q -- '^- #1 · ' p.md || fail "line still in file" || return 1
+}
+
+test_remove_leading_zero() {
+  export PARKED_FILE="$PWD/p.md"
+  echo "a" | bash "$PARK" add >/dev/null; echo "b" | bash "$PARK" add >/dev/null; echo "c" | bash "$PARK" add >/dev/null
+  local out; out="$(bash "$PARK" remove 03)"
+  [ "$out" = "removed #3" ] || fail "got '$out'" || return 1
+}
+
+test_get() {
+  export PARKED_FILE="$PWD/p.md"
+  echo "plain" | bash "$PARK" add >/dev/null
+  echo "tagged" | bash "$PARK" add --crew c1 --mission m1 >/dev/null
+  [ "$(bash "$PARK" get 1)" = "plain" ] || fail "get 1" || return 1
+  [ "$(bash "$PARK" get '#2')" = "[crew:c1 · mission:m1] tagged" ] || fail "get 2" || return 1
+}
+
+test_list_order() {
+  export PARKED_FILE="$PWD/p.md"
+  echo "a" | bash "$PARK" add >/dev/null; echo "b" | bash "$PARK" add >/dev/null
+  [ "$(bash "$PARK" list | head -1)" = "- #2 · $today · b" ] || fail "newest first" || return 1
+  [ "$(bash "$PARK" list --oldest | head -1)" = "- #1 · $today · a" ] || fail "--oldest" || return 1
+}
+
+test_unknown_command() {
+  export PARKED_FILE="$PWD/p.md"
+  local out rc=0; out="$(bash "$PARK" bogus 2>&1)" || rc=$?
+  [ "$rc" = 1 ] && [ "$out" = "usage: park.sh add|list|get|remove" ] || fail "rc=$rc out='$out'" || return 1
+}
+
+test_mission_alone_rejected() {
+  export PARKED_FILE="$PWD/p.md"
+  local rc=0; echo "x" | bash "$PARK" add --mission m1 2>/dev/null || rc=$?
+  [ "$rc" = 1 ] && [ ! -e p.md ] || fail "rc=$rc" || return 1
+}
+
+test_dot_rejected() {
+  export PARKED_FILE="$PWD/p.md"
+  local rc=0; echo "x" | bash "$PARK" add --crew "a · b" --mission m 2>/dev/null || rc=$?
+  [ "$rc" = 1 ] && [ ! -e p.md ] || fail "rc=$rc" || return 1
+}
+
+test_crew_only_anchored() {
+  export PARKED_FILE="$PWD/p.md"
+  echo "human mentions [crew:x] tag" | bash "$PARK" add >/dev/null
+  local out; out="$(bash "$PARK" list --crew-only)"
+  [ "$out" = "nothing parked" ] || fail "got '$out'" || return 1
+}
+
+test_worktree_style() {
+  mkdir other repo; ( cd repo && git init -q )
+  export PARKED_FILE="$PWD/other/p.md"
+  ( cd repo && echo "x" | bash "$PARK" add --crew c --mission m >/dev/null ) || return 1
+  [ -f other/p.md ] || fail "not written" || return 1
+  [ ! -e repo/.mission-control ] || fail ".mission-control in cwd" || return 1
+}
+
+test_stale_lock_reclaimed() {
+  export PARKED_FILE="$PWD/p.md"
+  mkdir p.md.lock; touch -t 200001010000 p.md.lock
+  local start=$SECONDS out; out="$(echo "x" | bash "$PARK" add)"
+  [ "$out" = "parked #1" ] && [ $((SECONDS - start)) -le 3 ] || fail "out='$out'" || return 1
+}
+
+test_held_lock_dies() {
+  export PARKED_FILE="$PWD/p.md"
+  mkdir p.md.lock
+  local rc=0; echo "x" | PARK_LOCK_TRIES=5 bash "$PARK" add 2>/dev/null || rc=$?
+  [ "$rc" = 1 ] || fail "rc=$rc" || return 1
+  [ -d p.md.lock ] || fail "holder's lock was removed" || return 1
 }
 
 for CURRENT in $(declare -F | awk '{print $3}' | grep '^test_'); do
   tmp="$(mktemp -d)"
   if ( cd "$tmp" && unset PARKED_FILE && "$CURRENT" ); then echo "ok $CURRENT"; else
-    echo "FAIL $CURRENT (see above)" >/dev/null; fails=$((fails + 1)); fi
+    echo "FAIL $CURRENT"; fails=$((fails + 1)); fi
   rm -rf "$tmp"
 done
 [ "$fails" = 0 ]

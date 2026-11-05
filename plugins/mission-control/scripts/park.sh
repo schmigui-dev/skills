@@ -29,20 +29,41 @@ read_note() {
 parse_ids() {
   echo "$*" | tr ',#' '  ' | tr -s ' ' '\n' | sed '/^$/d' | while read -r id; do
     [[ "$id" =~ ^[0-9]+$ ]] || die "not an id: $id"
-    echo "$id"
+    echo "$((10#$id))"
   done
+}
+
+mtime() {
+  local t
+  t="$(stat -f %m "$1" 2>/dev/null)" && [[ "$t" =~ ^[0-9]+$ ]] && { echo "$t"; return; }
+  stat -c %Y "$1" 2>/dev/null
 }
 
 acquire_lock() {
   mkdir -p "$(dirname "$file")"
+  local i m held=0 tomb
   # mkdir is atomic, so it works as a lock without flock (not on macOS by default).
-  for _ in $(seq 1 100); do
-    mkdir "$lock" 2>/dev/null && break
-    # A lock older than 30s is left over from a killed run.
-    if [ -n "$(find "$lock" -maxdepth 0 -mmin +0.5 2>/dev/null)" ]; then rmdir "$lock" 2>/dev/null || true; fi
+  for ((i = 0; i < ${PARK_LOCK_TRIES:-100}; i++)); do
+    if mkdir "$lock" 2>/dev/null; then held=1; break; fi
+    # A lock 30s or older is left over from a killed run. Reap it by renaming it
+    # to a unique tombstone (atomic, so only one waiter wins), then re-check the
+    # tombstone's age: if we grabbed a fresh lock by mistake, put it back.
+    m="$(mtime "$lock" || true)"
+    if [ -n "$m" ] && [ $(( $(date +%s) - m )) -ge 30 ]; then
+      tomb="$lock.stale.$$.$RANDOM"
+      if mv "$lock" "$tomb" 2>/dev/null; then
+        m="$(mtime "$tomb" || true)"
+        if [ -n "$m" ] && [ $(( $(date +%s) - m )) -ge 30 ]; then
+          rmdir "$tomb" 2>/dev/null || true
+        elif [ ! -e "$lock" ]; then
+          mv "$tomb" "$lock" 2>/dev/null || rmdir "$tomb" 2>/dev/null || true
+        fi
+      fi
+      continue
+    fi
     sleep 0.1
   done
-  [ -d "$lock" ] || die "park: could not get lock $lock"
+  [ "$held" = 1 ] || die "park: could not get lock $lock"
   trap 'rmdir "$lock" 2>/dev/null || true' EXIT
 }
 
@@ -83,6 +104,7 @@ case "$cmd" in
         *) die "usage: park.sh add [--crew <crew-id> --mission <mission-id>] [--assumed <text>]" ;;
       esac
     done
+    case "$crew$mission" in *·*) die "--crew/--mission must not contain '·'" ;; esac
     [ -z "$crew" ] || [ -n "$mission" ] || die "--crew requires --mission"
     [ -z "$mission" ] || [ -n "$crew" ] || die "--mission requires --crew"
     note="$(read_note)"
@@ -119,8 +141,10 @@ case "$cmd" in
     out=""
     if [ -f "$file" ]; then
       out="$(grep -E "$entry_re" "$file" || true)"
+      # The crew tag sits right after the date field; anchor so notes can't spoof it.
+      tag_re='^- #[0-9]+ · [^ ]+ · \[crew:'
+      if [ "$crew_only" = 1 ] || [ -n "$mission" ]; then out="$(echo "$out" | grep -E "$tag_re" || true)"; fi
       if [ -n "$mission" ]; then out="$(echo "$out" | grep -F "mission:$mission]" || true)"; fi
-      if [ "$crew_only" = 1 ]; then out="$(echo "$out" | grep -F "[crew:" || true)"; fi
       if [ -n "$out" ] && [ "$oldest" = 0 ]; then
         out="$(echo "$out" | awk '{ l[NR] = $0 } END { for (i = NR; i >= 1; i--) print l[i] }')"
       fi
