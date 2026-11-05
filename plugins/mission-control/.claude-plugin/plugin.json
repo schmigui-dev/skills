@@ -1,0 +1,13 @@
+{
+  "name": "mission-control",
+  "version": "0.1.0",
+  "description": "Run agent work like a space mission. Brief and explore before, orchestrate a crew of agents, verify in layers, park questions instead of guessing, and make the go/no-go call before you ship.",
+  "author": {
+    "name": "Guillermo Schmithalter",
+    "url": "https://github.com/schmigui-dev"
+  },
+  "homepage": "https://github.com/schmigui-dev/skills/tree/main/plugins/mission-control",
+  "repository": "https://github.com/schmigui-dev/skills",
+  "license": "MIT",
+  "keywords": ["orchestration", "agents", "verification", "critical-thinking", "workflow", "shipping"]
+}
