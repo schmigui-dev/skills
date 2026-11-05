@@ -1,0 +1,6 @@
+schema_version: "1.0"
+name: park-human
+context:
+  scaffold_script: scaffold.sh
+graders:
+  - {type: tool_used, name: no-edit-tool, tool: Edit, min: 0, max: 0}
