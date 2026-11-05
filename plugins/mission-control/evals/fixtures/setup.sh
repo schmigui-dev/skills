@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copy the shop fixture into the current dir (the eval case's workspace)
 # as a git repo with one baseline commit, then apply a variant.
-# Usage: setup.sh <clean|parked>   (later tasks add variants)
+# Usage: setup.sh <clean|parked|recommend>   (later tasks add variants)
 set -euo pipefail
 variant=${1:?variant required}
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -44,6 +44,15 @@ verdict: none
 
 ## Needs your call
 EOF
+    ;;
+  recommend)
+    mkdir -p .mission-control
+    printf '*\n!.gitignore\n!config.md\n' > .mission-control/.gitignore
+    cat > .mission-control/config.md <<'EOF2'
+# mission-control config
+
+autonomy: recommend
+EOF2
     ;;
   *) echo "unknown variant: $variant" >&2; exit 2 ;;
 esac
