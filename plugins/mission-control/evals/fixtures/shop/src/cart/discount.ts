@@ -1,4 +1,4 @@
-import { Cart } from './cart';
+import { Cart } from './cart.ts';
 
 // Hardcoded discount codes. Only SAVE10 exists today.
 export function applyDiscount(cart: Cart, code: string): number {

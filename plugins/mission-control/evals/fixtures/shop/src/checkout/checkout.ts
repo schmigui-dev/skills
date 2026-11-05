@@ -1,4 +1,4 @@
-import { Cart } from '../cart/cart';
+import { Cart } from '../cart/cart.ts';
 
 export interface Payment {
   method: 'card' | 'gift-card';

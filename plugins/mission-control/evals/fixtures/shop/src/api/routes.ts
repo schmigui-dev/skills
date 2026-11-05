@@ -1,5 +1,5 @@
-import { Cart } from '../cart/cart';
-import { checkout } from '../checkout/checkout';
+import { Cart } from '../cart/cart.ts';
+import { checkout } from '../checkout/checkout.ts';
 
 const cart = new Cart();
 

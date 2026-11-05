@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Cart } from '../src/cart/cart';
+import { Cart } from '../src/cart/cart.ts';
 
 test('add puts an item in the cart', () => {
   const cart = new Cart();
