@@ -20,36 +20,39 @@ Without a brief, take **Verified means** from the project's own checks (e.g. CLA
 
 If neither $ARGUMENTS nor the conversation holds a task, ask `what's the mission?` and stop.
 
-Don't open with a list of questions. A risky gap the request leaves open (convention 3) is not guessed: list it in the plan under **Needs your call**, as a statement of what's undecided. Smaller gaps: decide, mark `(my guess)`, and move on.
+Don't open with a list of questions. A risky gap the request leaves open (convention 3) is not guessed: list it in the plan under **Needs your call**, as a statement of what's undecided, and name the assignments it affects. Smaller gaps: decide, mark `(my guess)`, and move on.
 
 **Autonomy.** Effective level: the brief's **Autonomy**, else `autonomy:` in `.mission-control/config.md`, else `commit`. Read `config.md` if it exists (plain `key: value` lines; unknown keys ignored). It also gives `crew-command` (unset if missing).
 
-**Mission files.** Mission id: `YYYY-MM-DD-<short-slug>` from the brief's title (today's date). Create the mission folder with the plugin script, which prints the absolute `.mission-control/` path:
+**Mission files.** Mission id: `YYYY-MM-DD-<short-slug>` from the brief's title (today's date). Create the mission folder with the plugin script. It prints the absolute `.mission-control/` path (at the git toplevel, else the current directory):
 
 ```bash
-MC=$(bash "${CLAUDE_SKILL_DIR}/../../scripts/mc-init.sh") && mkdir -p "$MC/missions/<id>"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/mc-init.sh"
 ```
 
-Write mission files with Bash heredocs (`cat > "$MC/missions/<id>/state.md" <<'EOF'`). Keep the Write and Edit tools for project code, so "no code touched before the plan is answered" is easy to check.
+Shell variables don't survive between commands, so copy the printed absolute path and use it literally from then on (below, `<mc>`). Likewise `<root>`, the main repo: the output of `git rev-parse --show-toplevel` from your session (if git isn't available, the parent of `<mc>`). Create `"<mc>/missions/<id>"` with `mkdir -p`. Write mission files with Bash heredocs (`cat > "<mc>/missions/<id>/state.md" <<'EOF'`). Keep the Write and Edit tools for project code, so "no code touched before the plan is answered" is easy to check.
 
 - `brief.md`: the brief as confirmed (or the task as stated, with "no brief was made").
-- `state.md`, exactly this format (status `planning` now):
+- `state.md`, in this format. Example of a mission in flight:
 
 ```markdown
-# Mission: <brief title>
+# Mission: Saved carts
 
-id: <YYYY-MM-DD-slug>
-status: planning | flight | landed | launched | aborted
-autonomy: <effective level>
-mode: subagents | worktrees | mixed
-mission-branch: mc/<id> | none
-verdict: none | verified | partially verified | unverified
+id: 2026-11-05-saved-carts
+status: flight
+autonomy: commit
+mode: subagents
+mission-branch: none
+verdict: none
 
 ## Needs your call
-- [ ] <item> · <source: decisions | crew #N | changelog>
+- [ ] Should guest carts be saved too? (affects engineer-1) · plan
+- [x] Keep the old /cart response shape? · crew #2 → yes, keep it
 ```
 
-Keep the field order. Update a field in place as the mission moves (`planning` → `flight` → `landed`; `mode` and `mission-branch` once known). A resolved item becomes `- [x] <item> · <source> → <the user's answer>`.
+Field values: `status` is `planning`, `flight`, `landed`, `launched` or `aborted` (start at `planning`). `mode` is `subagents`, `worktrees` or `mixed`. `mission-branch` is `mc/<id>` or `none`. `verdict` is `none`, `verified`, `partially verified` or `unverified`. Each item ends with ` · <source>`, where source is `plan` (raised by you, the Captain: a risky gap found while planning, a blocked crew report, a merge conflict), `crew #N` (a crew question parked as #N), `decisions` or `changelog`. With no items, leave the section empty under its heading.
+
+Keep the field order. Update a field in place as the mission moves (`planning` → `flight` → `landed`; `mode` and `mission-branch` once known). A resolved item becomes `- [x] <item> · <source> → <the user's answer>`. Write every plan-time risky gap into `state.md` with source `plan` when you show the plan.
 
 ## 1. Plan the flight
 
@@ -58,7 +61,7 @@ Read what's cheap and relevant (the brief, the files the task touches, CLAUDE.md
 - **Role and task:** one concrete outcome. Roles: researcher, engineer, reviewer, comms (changelog), or another you name.
 - **Owns:** the files or areas it may change. Research and review assignments say `read-only`.
 - **Brings back:** findings, changes made, problems, open questions.
-- **Verify with:** the exact checks it runs on its own work, taken from the brief's **Verified means** and narrowed to the assignment (e.g. `npm test` for an engineer; for a researcher, every claim cites `file:line` that it re-opened).
+- **Verify with:** the exact checks it runs on its own work, taken from the brief's **Verified means** and narrowed to the assignment (e.g. `npm test` for an engineer; for a researcher, every claim cites `file:line` that it re-opened). Subagents that run in parallel share one working tree, so their self-checks cover only their own files (e.g. one test file); a shared suite runs once the whole parallel group has finished, by you or by the next sequenced assignment.
 - **Mode:** subagent or worktree session (section 3).
 - **Order:** which parallel group, or what it runs after (section 2).
 
@@ -85,7 +88,11 @@ Mission: <id> · autonomy: <level> (<where it came from>) · mode: <subagents | 
 ### Skipped   (steps skipped because the stakes don't justify them, if any)
 ```
 
+If any assignment runs in a worktree, check `git -C "<root>" status --porcelain`. The mission branch is cut from HEAD, so uncommitted work isn't included: if the tree is dirty, say so under **Needs your call** (commit or stash first, or go without those changes).
+
 End with `Tell me what's wrong.` Then stop. Don't touch code, create branches or worktrees, or launch crew before the user answers. A reply like "fine" or "go" counts as approval; anything else, revise the plan and show it again.
+
+**Open items gate launches.** An assignment affected by an open **Needs your call** item doesn't launch until that item is answered. "go" launches only the unaffected assignments; then ask the open items, one at a time, most important first.
 
 Small missions (one crew member, or you doing it alone) may say so and go straight on after the answer, but the plan is still shown first.
 
@@ -110,21 +117,22 @@ The assignment format is the same in both modes, so a subagent assignment can be
 After the plan is answered: set `status: flight`, create any tickets, then hand out assignments in the planned order.
 
 Fill the standing orders' park command with absolute paths at assignment time:
-- main repo: `git rev-parse --show-toplevel` from your session (if git isn't available, the directory `mc-init.sh` resolved, i.e. the parent of `$MC`);
-- park.sh: `${CLAUDE_SKILL_DIR}/../../scripts/park.sh` resolved to an absolute path (`cd "${CLAUDE_SKILL_DIR}/../../scripts" && pwd -P`).
+- main repo: `<root>`;
+- park.sh: `( cd "${CLAUDE_SKILL_DIR}/../../scripts" && pwd -P )` plus `/park.sh`.
 
 The crew's standing orders (verbatim in every assignment, from the template): stay inside **Owns**; a risky question the brief doesn't cover → stop and report blocked; any other gap → park it with the exact command, take the most reversible option, record the assumption, continue; self-check with **Verify with**, verbatim output; never run `/mission-control:verify` or start reviewer agents (crew only self-check, so reviews don't nest).
 
 As reports come back:
-- A **blocked** report is a risky gap: add it to `state.md` under **Needs your call** and ask the user (one question at a time). Don't answer it for them.
+- A **blocked** report is a risky gap: add it to `state.md` under **Needs your call** (source `plan`, naming the crew member) and ask the user (one question at a time). Don't answer it for them. Once they answer, mark it `[x] … → <answer>` and resume or re-dispatch that crew member with the answer added to its assignment.
 - Check each report has its **Verify with** output. A report without it isn't done: send it back.
-- Start the next sequenced assignment only when the one before it has reported.
+- Start the next sequenced assignment only when the one before it has reported. In worktree mode, merge it into the mission branch first, so the next one starts from its work.
+- Gaps the crew parked show up in `/mission-control:parked crew`; go-no-go checks them before launch.
 
 ## 5. Land
 
-1. Collect every report and change. In worktree mode, merge the crew branches into `mc/<id>` (see `worktrees.md`).
+1. Collect every report and change. In worktree mode, merge the crew branches into `mc/<id>` inside the mission worktree (see `worktrees.md`); a merge conflict stops the landing.
 2. Set `status: landed` in `state.md`.
-3. Run `/mission-control:verify` on the combined result. It records the verdict in `state.md`.
+3. Run `/mission-control:verify` on the combined result (in worktree mode, the mission worktree). It records the verdict in `state.md`.
 4. Hand off to `/mission-control:go-no-go`, which briefs the user and does what the autonomy level allows on "launch".
 
 If the user aborts: set `status: aborted`, leave any worktrees in place and list them.
