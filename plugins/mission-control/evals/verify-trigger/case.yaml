@@ -1,0 +1,6 @@
+schema_version: "1.0"
+name: verify-trigger
+context:
+  scaffold_script: scaffold.sh
+graders:
+  - {type: tool_used, name: skill-invoked, tool: Skill, min: 1}
