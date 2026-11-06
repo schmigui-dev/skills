@@ -8,7 +8,8 @@
 #   park.sh remove <id>...                                        → removed #N / #N not found
 #
 # IDs may be written as 3, #3, or 3,5. Default file is <project>/.mission-control/parked.md
-# (created via mc-init.sh next to this script). Set PARKED_FILE to use another file.
+# in the main worktree, also when run from a linked (mission or crew) worktree (resolved
+# by mc-init.sh next to this script). Set PARKED_FILE to use another file.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,6 +25,21 @@ die() { echo "$*" >&2; exit 1; }
 
 read_note() {
   tr '\n\t' '  ' | sed -E 's/ +/ /g; s/^ //; s/ $//'
+}
+
+# Drops one pair of quotes wrapping the whole note ("note" or 'note' → note),
+# as left by `/park "note"`. Only when the quote char appears nowhere inside, so
+# `"a" or "b"` is kept as written.
+strip_quotes() {
+  local s="$1" q inner
+  if [ "${#s}" -ge 2 ]; then
+    q="${s:0:1}"
+    inner="${s:1:${#s}-2}"
+    if { [ "$q" = '"' ] || [ "$q" = "'" ]; } && [ "${s: -1}" = "$q" ]; then
+      case "$inner" in *"$q"*) ;; *) s="$inner" ;; esac
+    fi
+  fi
+  printf '%s' "$s"
 }
 
 parse_ids() {
@@ -107,7 +123,7 @@ case "$cmd" in
     case "$crew$mission" in *·*) die "--crew/--mission must not contain '·'" ;; esac
     [ -z "$crew" ] || [ -n "$mission" ] || die "--crew requires --mission"
     [ -z "$mission" ] || [ -n "$crew" ] || die "--mission requires --crew"
-    note="$(read_note)"
+    note="$(strip_quotes "$(read_note)")"
     [ -n "$note" ] || die 'nothing to park — usage: park.sh add (note on stdin)'
     if [ -n "$crew" ]; then
       note="[crew:$crew · mission:$mission] $note"
@@ -162,7 +178,7 @@ case "$cmd" in
 
   remove)
     ids="$(parse_ids "$@")"
-    [ -n "$ids" ] || die "usage: /unpark <id>"
+    [ -n "$ids" ] || die "usage: park.sh remove <id>..."
     acquire_lock
     require_file
     rewrite -v ids="$(echo "$ids" | tr '\n' ' ')" '

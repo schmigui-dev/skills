@@ -137,6 +137,29 @@ test_worktree_style() {
   [ ! -e repo/.mission-control ] || fail ".mission-control in cwd" || return 1
 }
 
+test_linked_worktree_uses_main_repo() {
+  git init -q main || return 1
+  git -C main -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m base || return 1
+  git -C main worktree add -q -b mc/m "$PWD/main-mc-m" || return 1
+  ( cd main && echo "from main" | bash "$PARK" add >/dev/null ) || return 1
+  local out; out="$(cd main-mc-m && bash "$PARK" list)"
+  [ "$out" = "- #1 · $today · from main" ] || fail "list from worktree got '$out'" || return 1
+  local mc; mc="$(cd main-mc-m && bash "$INIT")"
+  [ "$mc" = "$(cd main && pwd -P)/.mission-control" ] || fail "mc-init printed '$mc'" || return 1
+  [ ! -e main-mc-m/.mission-control ] || fail ".mission-control created in the worktree" || return 1
+  [ -z "$(git -C main-mc-m status --porcelain)" ] || fail "worktree not clean" || return 1
+}
+
+test_add_strips_wrapping_quotes() {
+  export PARKED_FILE="$PWD/p.md"
+  echo '"quoted note"' | bash "$PARK" add >/dev/null
+  echo "'single'" | bash "$PARK" add >/dev/null
+  echo '"a" or "b"' | bash "$PARK" add >/dev/null
+  [ "$(bash "$PARK" get 1)" = "quoted note" ] || fail "get 1: $(bash "$PARK" get 1)" || return 1
+  [ "$(bash "$PARK" get 2)" = "single" ] || fail "get 2: $(bash "$PARK" get 2)" || return 1
+  [ "$(bash "$PARK" get 3)" = '"a" or "b"' ] || fail "get 3: $(bash "$PARK" get 3)" || return 1
+}
+
 test_stale_lock_reclaimed() {
   export PARKED_FILE="$PWD/p.md"
   mkdir p.md.lock; touch -t 200001010000 p.md.lock
