@@ -239,7 +239,7 @@ Optionally offers `quiz` before launch when the change is risky.
 | `deploy` | + releases/deploys with the project's documented command, writes the changelog and version | none (still briefed after) |
 
 - **Precedence:** brief's **Autonomy** > `config.md` > default `commit`.
-- **Gates (all levels above `commit`):** the action happens only if the verdict is **verified**, there are **no open "needs your call" items**, and **no open parked crew questions** for the mission. Otherwise the Captain stops and reports what's blocking, whatever the level.
+- **Gates (every level from `commit` up, user decision):** the action happens only if the verdict is **verified**, there are **no open "needs your call" items**, and **no open parked crew questions** for the mission. Otherwise the Captain makes no commits and no merge, stops, and reports what's blocking, whatever the level.
 - **Never inferred:** force-push, history rewrite, deleting remote branches, and a prod deploy without a documented deploy command. These need an explicit instruction in the session, whatever the level.
 - Commits follow the repo's existing message conventions and identity. Commit messages carry no attribution beyond what the host requires.
 
@@ -320,7 +320,7 @@ Use the `claude plugin eval` harness the way `same-page/evals` does. Required ca
 - **execute triggers from natural language:** "send one agent to research A and another to look at B, then propose a plan".
 - **No parallel overlap:** a flight plan with two edits to the same file puts them in sequence.
 - **Flight plan before code:** no Edit/Write before the human answers the playback.
-- **Autonomy gate:** at `push` with an open parked crew question, nothing is pushed.
+- **Autonomy gate:** at `push` with an open parked crew question, nothing is committed or pushed.
 - **Playback wording:** proposing skills end with a "what's wrong" question, not an approval question.
 
 The rest of the eval set is the builder's call.

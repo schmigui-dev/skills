@@ -1,6 +1,7 @@
 ---
 name: go-no-go
 description: Use when a mission-control mission (or any significant change) has landed and the user is deciding whether to ship it, or says "launch" on a landed mission. Briefs the Flight Director (verdict, open calls, what changed, commits, version and changelog, recommendation, autonomy) and, on "launch", does what the autonomy level allows behind its gates.
+disable-model-invocation: true
 argument-hint: "[launch | mission id — defaults to the current mission]"
 ---
 
@@ -30,7 +31,7 @@ A mission whose status isn't `landed` yet (`planning`, `flight`) isn't ready: sa
   ```
   Each line is `- #N · <date> · [crew:<crew-id> · mission:<id>] <question> — assumed: <assumption>`; `nothing parked` means none.
 - **Decisions:** the "needs your call" items `/mission-control:decisions` would raise for this work (invented values, risky defaults, scope cuts). Add new ones to `state.md` as `- [ ] <item> · decisions`.
-- **The diff.** Subagent mode: the user's tree (`git status`, `git diff`, new files read whole). Worktree or mixed mode: the mission branch against its base, `git -C "<root>" diff "$(git -C "<root>" merge-base HEAD "mc/<mission-id>")" "mc/<mission-id>"`, in the mission worktree `"<parent of root>/<repo>-mc-<mission-id>"`.
+- **The diff.** Subagent mode: the user's tree, in `<root>` (`git status`, `git diff`, new files read whole). Worktree or mixed mode: the combined result is in the mission worktree `<wt>` = `<parent of root>/<repo>-mc-<mission-id>` (branch `mc/<mission-id>`), so run the commands there, against the user's branch `<base>` (the one checked out in `<root>`): `git -C "<wt>" status` and `git -C "<wt>" diff "$(git -C "<wt>" merge-base "<base>" HEAD)"` (committed and uncommitted mission work), new files read whole.
 - **The verdict.** `verdict:` from `state.md`, as `/mission-control:verify` recorded it. If verify ran in this session after the latest change, quote its checks. If not, say the verdict was recorded earlier and not re-checked here; if the definition's checks are safe and read-only (tests, lint, typecheck, build), run them now and paste the output. A verdict of `none` means verify never ran: recommend `/mission-control:verify` first.
 - **Version scheme and changelog:** git tags, `package.json`, `plugin.json`, `CHANGELOG.md` headings. The repo's commit message conventions: `git log --oneline -10`.
 
@@ -77,7 +78,7 @@ Written to <file>: <only on launch at `deploy`, or if you ask>
 
 ## Autonomy in effect
 <level> (from <the brief | config.md | default>). On "launch" I will: <the exact actions>. Left to you: <the rest>.
-<anything blocked by a gate, and what blocks it>
+<anything blocked by a gate, and what blocks it. While the verdict isn't verified or any item or parked crew question is open, the local commits are blocked too: say so.>
 
 ## Tracker updates   (only if the brief's Tracker asks for them)
 <exactly what will be posted where>
@@ -89,7 +90,7 @@ Mark inferences `(my guess)`. End with:
 
 Then stop. Optionally, when the change is risky, offer `/mission-control:quiz` before launch, in one line above the ending.
 
-**"launch" given up front** (in $ARGUMENTS or with the request, before the user has seen this briefing): still show the briefing in full, then act as in step 5, which stops at the first failed gate.
+**"launch" given up front** (in $ARGUMENTS or with the request, before the user has seen this briefing): still show the briefing in full, then act as in step 6 ("Launch"), whose gate check comes first: with an open item, nothing is committed or merged.
 
 ## 5. Captain autonomy
 
@@ -104,18 +105,19 @@ Then stop. Optionally, when the change is risky, offer `/mission-control:quiz` b
 | `deploy` | + releases/deploys with the project's documented command, writes the changelog and version | none (still briefed after) |
 
 - **Precedence:** brief's **Autonomy** > `config.md` > default `commit`. (`config.md` is `.mission-control/config.md`, plain `key: value` lines; a missing file or field means the default.)
-- **Gates (all levels above `commit`):** the action happens only if the verdict is **verified**, there are **no open "needs your call" items**, and **no open parked crew questions** for the mission. Otherwise the Captain stops and reports what's blocking, whatever the level.
-  Check all three right before acting: `verdict: verified` in `state.md`; no `- [ ]` line under its `## Needs your call`; and `park.sh list --mission <mission-id> --crew-only` prints `nothing parked`.
+- **Gates (every level from `commit` up):** the action happens only if the verdict is **verified**, there are **no open "needs your call" items**, and **no open parked crew questions** for the mission. Otherwise the Captain makes no commits and no merge, stops, and reports what's blocking, whatever the level.
+  Check all three before the first commit or merge: `verdict: verified` in `state.md`; no `- [ ]` line under its `## Needs your call`; and `park.sh list --mission <mission-id> --crew-only` prints `nothing parked`.
 - **Never inferred:** force-push, history rewrite, deleting remote branches, and a prod deploy without a documented deploy command. These need an explicit instruction in the session, whatever the level.
 - Commits follow the repo's existing message conventions and identity. Commit messages carry no attribution beyond what the host requires.
 
 ## 6. On the user's answer
 
 **Launch:** act up to the autonomy level, and recommend the rest.
+0. **Gates first**, before any commit or merge of `mc/<mission-id>` (at `recommend` there's nothing to gate: propose the commits and stop). If any gate fails: make no commits and no merge, touch nothing on the user's branch or the remote, keep `status: landed`, and list what must be answered first: the verdict if it isn't `verified`, every open `- [ ]` item, and each open parked crew question by # (with its question). Then take the answers as below.
 1. **`commit` part** (levels `commit` and above): make the commits shown under **Commits**.
    - Subagent mode (`mission-branch: none`): commit directly on the user's branch.
    - Worktree or mixed mode: merge `mc/<mission-id>` into the user's branch, organizing the local commits. A conflict stops the launch: `git merge --abort`, add a `- [ ] … · plan` item naming the files, and ask. Then remove the mission worktree only if it's clean (`git -C "<worktree>" status --porcelain` prints nothing) and its branch is merged: `git -C "<root>" worktree remove "<worktree>"`. Never with `--force`; a worktree that isn't clean or merged stays, and you list it.
-2. **Above `commit`:** check the gates. If any fails, stop: do nothing further on the remote, and report exactly what's blocking (the verdict, each open item, each parked crew question by #). Otherwise push and open the PR (`push`), merge it (`merge`), and at `deploy` write the changelog entry and version, then release with the project's documented deploy command. No documented command: stop and ask, never infer one.
+2. **Above `commit`** (gates already passed in step 0): push and open the PR (`push`), merge it (`merge`), and at `deploy` write the changelog entry and version, then release with the project's documented deploy command. No documented command: stop and ask, never infer one.
 3. **Trackers:** only if the brief's **Tracker** asks for updates (statuses, PR/commit links, the changelog entry). Post exactly what the briefing showed, with whatever connector the host has for that tool. No connector: give ready-to-paste drafts. If **Tracker** is empty or says nothing about updating, touch no tracker.
 4. **Changelog to file:** only at `deploy`, or when the user asks for it.
 5. Set `status: launched` in `state.md` once everything the level allows is done. If a gate or a conflict stopped you, keep `status: landed`.
@@ -131,4 +133,4 @@ Then stop. Optionally, when the change is risky, offer `/mission-control:quiz` b
 - mark each in `state.md` as `- [x] <item> · <source> → <the user's answer>`;
 - a parked crew question: also `bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" remove <N>`, and add it to `state.md` as resolved (`- [x] <question> · crew #N → <answer>`) if it wasn't there. If the answer differs from the crew's assumption, the work has to change before launch: offer **iterate**.
 
-Once the last open item is answered, show the gates again and ask `Launch, iterate, rethink, or re-run?`.
+Once the last open item is answered, show the gates again and ask `Launch, iterate, rethink, or re-run? Tell me what's wrong.`

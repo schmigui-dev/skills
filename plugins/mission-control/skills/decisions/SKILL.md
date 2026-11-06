@@ -65,7 +65,7 @@ Report every decision you found, without trimming the list to look tidy. If a ca
 
 ## 3. Close the loop
 
-Ask: `confirm or change the "needs your call" items?` Take the answers one at a time, most important first. Apply any changes the user asks for. As each item is answered:
+Ask: `Confirm or change the "needs your call" items: what's wrong?` Take the answers one at a time, most important first. Apply any changes the user asks for. As each item is answered:
 - in `state.md`, mark it `- [x] <item> · <source> → <the user's answer>`;
 - a crew question: also remove it from the parking lot, `bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" remove <N>`. If the answer differs from the crew's assumption, the work needs changing: say which files, and offer to change them (or, in a mission, to send it back through `/mission-control:execute`).
 

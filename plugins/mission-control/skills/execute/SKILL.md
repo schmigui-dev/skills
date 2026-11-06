@@ -133,6 +133,6 @@ As reports come back:
 1. Collect every report and change. In worktree mode, merge the crew branches into `mc/<id>` inside the mission worktree (see `worktrees.md`); a merge conflict stops the landing.
 2. Set `status: landed` in `state.md`.
 3. Run `/mission-control:verify` on the combined result (in worktree mode, the mission worktree). It records the verdict in `state.md`.
-4. Hand off to `/mission-control:go-no-go`, which briefs the user and does what the autonomy level allows on "launch".
+4. Hand off: tell the user to run `/mission-control:go-no-go` (don't invoke it yourself), which briefs them and does what the autonomy level allows on "launch".
 
 If the user aborts: set `status: aborted`, leave any worktrees in place and list them.

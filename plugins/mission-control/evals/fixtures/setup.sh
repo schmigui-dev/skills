@@ -73,6 +73,8 @@ EOF
 
 # A landed, verified saved-carts mission whose work is still uncommitted:
 # src/cart/saved-cart.ts (saveCart, loadCart), its test, and per-user carts in the API.
+# Keep it ship-worthy (wired in, tested, per-user): go-no-go-briefing needs a
+# "ship" recommendation, or no changelog/version gets drafted and the case fails.
 landed_saved_carts() { # <autonomy>
   mc_config "$1"
   mission_state 2026-11-05-saved-carts "$1" verified
