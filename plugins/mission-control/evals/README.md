@@ -42,3 +42,14 @@ Variants: `clean` (baseline), `parked` (parking lot + a landed mission), `recomm
 - git doesn't run inside the eval sandbox on macOS (the `/usr/bin/git` xcrun shim can't write its cache). Git-dependent cases are graded from the transcript.
 - `setup.sh` refuses to run outside an empty workspace.
 - `claude plugin validate` warns `ICON_MISSING`. Harmless.
+
+## Full run (2026-11-06)
+
+`claude plugin eval . $FLAGS -j 8 --runs 3` with the with/without ablation: 17 cases, 51 runs per arm, $44.30, 565 s. Overall score 0.97, pass rate 0.92, mean delta +0.71. Every case passed at least 2 of 3 runs except `execute-recommend-no-worktree` (1/3), which then passed 3/3 on a re-run.
+
+Flaky cases (no fixes made; the skill output was correct in each failing run):
+
+- `execute-recommend-no-worktree` (1/3, re-run 3/3): `ending` got FAIL FAIL FAIL on two replies whose last line was literally `Tell me what's wrong.`. The same reply judged standalone with the same criterion and `--model sonnet` passed. Judge noise, not a grader or skill defect. The other four graders passed in all runs.
+- `smoke` (2/3, baseline also 2/3): `criteria` wants the summary to mention "Saved carts". The failing reply paraphrased it ("save signed-in users' carts"). Harness sanity check only, it doesn't load any skill.
+- `brief-from-ticket` (2/3): `gaps` failed once. The brief listed its open questions as statements, then asked one question; the judge counted the list as several questions.
+- `go-no-go-gate`: the no-plugin baseline is cautious on its own, so the delta (+0.75) is smaller than for the other go-no-go cases.

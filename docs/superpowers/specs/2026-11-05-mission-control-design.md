@@ -172,8 +172,8 @@ Show the flight plan as a playback ending "Tell me what's wrong." No code is tou
 **3. Pick the mode for each assignment.**
 - **Subagent (default):** a subagent in the current session, via the host's subagent tool. The assignment text is the subagent's whole prompt.
 - **Worktree session:** for big assignments, or assignments that touch areas other crew members are working on in parallel. **Off at `recommend` autonomy**: there, every assignment runs as a subagent.
-  - **Mission branch:** `mc/<mission-id>`, created from the user's current branch when the first worktree is needed.
-  - `git worktree add ../<repo>-mc-<crew-id> -b mc/<mission-id>/<crew-id> mc/<mission-id>`
+  - **Mission branch:** `mc/<mission-id>`, created from the user's current branch when the first worktree is needed, in a dedicated mission worktree at `<parent>/<repo>-mc-<mission-id>` (`<parent>` = the main repo's parent directory). Crew branches merge into it there, never by switching the user's checkout.
+  - **Crew branch and worktree:** `git worktree add ../<repo>-mc-<crew-id> -b mc/<mission-id>--<crew-id> mc/<mission-id>`. The separator is `--`, not `/`: git can't hold both `mc/<mission-id>` and `mc/<mission-id>/<crew-id>` as refs.
   - Write `.mission-control/missions/<id>/assignments/<crew-id>.md` in the **main** repo, and give the crew member the absolute path to it and to its report path.
   - Launch with `crew-command` from `config.md` (e.g. `claude -p`, `codex exec`, or Cursor's agent CLI), in the background, cwd = the worktree, prompt = "Read <assignment path> and do it. Write your report to <report path>." If `crew-command` is unset or launching isn't possible, print the exact command for the human to run in a new terminal, and wait.
   - **Permissions are the user's job (user decision).** The plugin never adds permission flags, least of all bypass flags, to `crew-command`. It runs exactly what's configured. The README shows a working example, e.g. `claude -p --permission-mode acceptEdits --add-dir <main repo path>` (the crew needs edit and test permissions in its worktree, plus write access to the main repo's `.mission-control/` for its report and `park.sh`). If a crew session fails on permissions, the Captain reports the failure and prints the command for the user to run themselves.
@@ -186,7 +186,7 @@ Show the flight plan as a playback ending "Tell me what's wrong." No code is tou
 - Self-verify with **Verify with** before reporting. Include verbatim output.
 - *My call:* crew members **only self-check (layer 1)**. They never run `verify` or start reviewer agents themselves, so reviews don't nest. `verify`'s description excludes crew assignments explicitly.
 
-**5. Land.** Collect reports and changes, merge worktree branches into the mission branch, then run `verify` on the combined result. Hand off to `go-no-go`.
+**5. Land.** Collect reports and changes, merge the crew branches into the mission branch inside the mission worktree, then run `verify` on the combined result. Hand off to `go-no-go`.
 
 ### `verify` (new)
 

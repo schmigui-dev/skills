@@ -22,7 +22,7 @@
 - Cross-references use `/mission-control:<skill>`. No `/no-surrender:` or bare `/brief` references remain anywhere in the plugin.
 - No tracker-specific code (no Notion/Jira/Linear names in instructions except as examples). No dependency on Orca, superpowers or any agent app.
 - The plugin never adds permission flags to `crew-command`.
-- State paths: `.mission-control/{.gitignore,config.md,parked.md,missions/<id>/{brief.md,state.md,assignments/,reports/}}`. Mission id `YYYY-MM-DD-<slug>`. Branches `mc/<mission-id>` and `mc/<mission-id>/<crew-id>`. Worktree path `../<repo>-mc-<crew-id>`.
+- State paths: `.mission-control/{.gitignore,config.md,parked.md,missions/<id>/{brief.md,state.md,assignments/,reports/}}`. Mission id `YYYY-MM-DD-<slug>`. Branches `mc/<mission-id>` (mission) and `mc/<mission-id>--<crew-id>` (crew; `--`, not `/`, since git can't hold both `mc/<id>` and `mc/<id>/x` as refs). Crew worktree path `../<repo>-mc-<crew-id>`. Mission worktree `<parent>/<repo>-mc-<mission-id>`, where crew branches merge into `mc/<mission-id>`; the user's checkout is never switched.
 - Autonomy levels exactly `recommend | commit | push | merge | deploy`, default `commit`. Precedence: brief **Autonomy** > `config.md` > default.
 - Stop guard env vars: `MISSION_CONTROL_STOP_GUARD=off` and legacy `NO_SURRENDER_STOP_GUARD=off` both disable it. Message prefix `mission-control:`.
 - Evals: same harness conventions as `plugins/same-page/evals` (`case.yaml` with `context.scaffold_script: scaffold.sh`, `prompt.md` frontmatter `max_turns`/`allowed_tools`, `graders/*.md` llm graders). git doesn't run inside the eval sandbox, so git-dependent behavior is graded from the transcript. Run with `--judge-model sonnet`.

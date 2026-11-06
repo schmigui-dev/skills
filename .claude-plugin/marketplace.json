@@ -12,9 +12,9 @@
       "description": "Park ideas and questions mid-task, then come back later to discuss them, or edit, merge, renumber, and remove them."
     },
     {
-      "name": "no-surrender",
-      "source": "./plugins/no-surrender",
-      "description": "Stay on top of what agents build. Brief before, surface blind spots, demand evidence, expose the agent's decisions, and quiz yourself before you ship."
+      "name": "mission-control",
+      "source": "./plugins/mission-control",
+      "description": "Run agent work like a space mission. Brief and explore before, orchestrate a crew of agents, verify in layers, park questions instead of guessing, and make the go/no-go call before you ship."
     },
     {
       "name": "same-page",
