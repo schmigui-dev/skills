@@ -150,6 +150,13 @@ test_linked_worktree_uses_main_repo() {
   [ -z "$(git -C main-mc-m status --porcelain)" ] || fail "worktree not clean" || return 1
 }
 
+test_init_find_creates_nothing() {
+  git init -q . || return 1
+  local out; out="$(bash "$INIT" --find)"
+  [ "$out" = "$(pwd -P)/.mission-control" ] || fail "printed '$out'" || return 1
+  [ ! -e .mission-control ] || fail "--find created .mission-control" || return 1
+}
+
 test_add_strips_wrapping_quotes() {
   export PARKED_FILE="$PWD/p.md"
   echo '"quoted note"' | bash "$PARK" add >/dev/null

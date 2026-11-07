@@ -2,8 +2,9 @@
 # Creates <project root>/.mission-control/ (with its .gitignore) if missing and
 # prints its absolute path. Idempotent.
 #
-#   mc-init.sh [dir]    dir, else the main worktree of the current git repo
-#                       (also from inside a linked worktree), else the current directory
+#   mc-init.sh [--find] [dir]   dir, else the main worktree of the current git repo
+#                               (also from inside a linked worktree), else the current directory
+#   --find: only print the path; create nothing (for skills that just read missions)
 set -euo pipefail
 
 # The main worktree: the directory holding the repo's common .git dir. From a
@@ -23,6 +24,9 @@ main_worktree() {
   dirname "$common"
 }
 
+find=0
+if [ "${1:-}" = --find ]; then find=1; shift; fi
+
 if [ $# -ge 1 ] && [ -n "$1" ]; then
   root="$1"
 else
@@ -31,6 +35,7 @@ fi
 root="$(cd "$root" && pwd -P)"
 
 mc="$root/.mission-control"
+if [ "$find" = 1 ]; then echo "$mc"; exit 0; fi
 mkdir -p "$mc"
 [ -f "$mc/.gitignore" ] || printf '*\n!.gitignore\n!config.md\n' > "$mc/.gitignore"
 echo "$mc"
