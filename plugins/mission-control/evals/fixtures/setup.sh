@@ -48,6 +48,7 @@ EOF
 
 mission_state() { # <id> <autonomy> <verdict> [status] [title]
   local id=$1 autonomy=$2 verdict=$3 status=${4:-landed} title=${5:-Saved carts}
+  local base; base="$(git rev-parse HEAD)"
   mkdir -p "$mc/missions/$id"
   cat > "$mc/missions/$id/state.md" <<EOF
 # Mission: $title
@@ -57,7 +58,11 @@ status: $status
 autonomy: $autonomy
 mode: subagents
 mission-branch: none
+base: $base
 verdict: $verdict
+
+## Pre-existing changes
+none
 
 ## Needs your call
 EOF

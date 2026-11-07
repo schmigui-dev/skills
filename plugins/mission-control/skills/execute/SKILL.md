@@ -24,13 +24,20 @@ Don't open with a list of questions. A risky gap the request leaves open (conven
 
 **Autonomy.** Effective level: the brief's **Autonomy**, else `autonomy:` in `.mission-control/config.md`, else `commit`. Read `config.md` if it exists (plain `key: value` lines; unknown keys ignored). It also gives `crew-command` (unset if missing).
 
-**Mission files.** Mission id: `YYYY-MM-DD-<short-slug>` from the brief's title (today's date). Create the mission folder with the plugin script. It prints the absolute `.mission-control/` path (at the git toplevel, else the current directory):
+**Mission files.** Find the mission folder with the plugin script. It prints the absolute `.mission-control/` path, in the main repo (also when run from inside a worktree), else the current directory, creating it if missing:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/../../scripts/mc-init.sh"
 ```
 
-Shell variables don't survive between commands, so copy the printed absolute path and use it literally from then on (below, `<mc>`). Likewise `<root>`, the main repo: the output of `git rev-parse --show-toplevel` from your session (if git isn't available, the parent of `<mc>`). Create `"<mc>/missions/<id>"` with `mkdir -p`. Write mission files with Bash heredocs (`cat > "<mc>/missions/<id>/state.md" <<'EOF'`). Keep the Write and Edit tools for project code, so "no code touched before the plan is answered" is easy to check.
+Shell variables don't survive between commands, so copy the printed absolute path and use it literally from then on (below, `<mc>`). `<root>`, the main repo, is the parent directory of `<mc>`. Never locate `.mission-control/` with `git rev-parse --show-toplevel`: inside a worktree that's the worktree, not the main repo.
+
+**Current mission first.** Check `"<mc>/missions/"*/state.md` for a current mission (`status:` not `launched` or `aborted`).
+- **Iterating on it** (the user comes from `/mission-control:go-no-go` with iterate or re-run, or says they're continuing it): reuse it. Keep its id, folder, `base:`, `## Pre-existing changes` and every `## Needs your call` item. Update `brief.md` if the brief changed, set `status: planning` and `verdict: none` (the work is about to change), and plan the new flight. A worktree mission keeps its mission branch and worktree.
+- **Clearly new work:** a new mission, below.
+- **Unclear** whether the request continues the current mission or is new work: ask that one question and stop.
+
+A new mission's id is `YYYY-MM-DD-<short-slug>` from the brief's title (today's date). Create `"<mc>/missions/<id>"` with `mkdir -p`. Write mission files with Bash heredocs (`cat > "<mc>/missions/<id>/state.md" <<'EOF'`). Keep the Write and Edit tools for project code, so "no code touched before the plan is answered" is easy to check.
 
 - `brief.md`: the brief as confirmed (or the task as stated, with "no brief was made").
 - `state.md`, in this format. Example of a mission in flight:
@@ -43,16 +50,20 @@ status: flight
 autonomy: commit
 mode: subagents
 mission-branch: none
+base: 9f3c2a17d4e8b6a05c1f7e2d93b4a68c0e5f1d27
 verdict: none
+
+## Pre-existing changes
+- notes/todo.md
 
 ## Needs your call
 - [ ] Should guest carts be saved too? (affects engineer-1) · plan
 - [x] Keep the old /cart response shape? · crew #2 → yes, keep it
 ```
 
-Field values: `status` is `planning`, `flight`, `landed`, `launched` or `aborted` (start at `planning`). `mode` is `subagents`, `worktrees` or `mixed`. `mission-branch` is `mc/<id>` or `none`. `verdict` is `none`, `verified`, `partially verified` or `unverified`. Each item ends with ` · <source>`, where source is `plan` (raised by you, the Captain: a risky gap found while planning, a blocked crew report, a merge conflict), `crew #N` (a crew question parked as #N), `decisions` or `changelog`. With no items, leave the section empty under its heading.
+Field values: `status` is `planning`, `flight`, `landed`, `launched` or `aborted` (start at `planning`). `mode` is `subagents`, `worktrees` or `mixed`. `mission-branch` is `mc/<id>` or `none`. `base` is `none` until the flight starts, then the full hash of the commit the mission starts from (section 4); every diff of the mission's work is taken from it. `## Pre-existing changes` lists, one `- <path>` per line, the files that already had uncommitted changes when the flight started (they're the user's, not the mission's, and are never committed as mission work), or the single line `none` (also its value until the flight starts). `verdict` is `none`, `verified`, `partially verified` or `unverified`. Each item ends with ` · <source>`, where source is `plan` (raised by you, the Captain: a risky gap found while planning, a blocked crew report, a merge conflict), `crew #N` (a crew question parked as #N), `decisions` or `changelog`. With no items, leave the section empty under its heading.
 
-Keep the field order. Update a field in place as the mission moves (`planning` → `flight` → `landed`; `mode` and `mission-branch` once known). A resolved item becomes `- [x] <item> · <source> → <the user's answer>`. Write every plan-time risky gap into `state.md` with source `plan` when you show the plan.
+Keep the field order. Update a field in place as the mission moves (`planning` → `flight` → `landed`; `mode`, `mission-branch` and `base` once known). A resolved item becomes `- [x] <item> · <source> → <the user's answer>`. Write every plan-time risky gap into `state.md` with source `plan` when you show the plan.
 
 ## 1. Plan the flight
 
@@ -88,7 +99,9 @@ Mission: <id> · autonomy: <level> (<where it came from>) · mode: <subagents | 
 ### Skipped   (steps skipped because the stakes don't justify them, if any)
 ```
 
-If any assignment runs in a worktree, check `git -C "<root>" status --porcelain`. The mission branch is cut from HEAD, so uncommitted work isn't included: if the tree is dirty, say so under **Needs your call** (commit or stash first, or go without those changes).
+In every mode, check `git -C "<root>" status --porcelain`. Files it lists are pre-existing changes, not the mission's: name them in the plan. Then:
+- **Worktree or mixed mode:** the mission branch is cut from HEAD, so they aren't included. Say so under **Needs your call** (commit or stash first, or go without those changes).
+- **Subagent mode:** the crew works in the same tree. If an assignment owns a file that's already changed, the mission's edits can't be told apart from the user's: say so under **Needs your call** (commit or stash it first). Other pre-existing changes are only listed.
 
 End with `Tell me what's wrong.` Then stop. Don't touch code, create branches or worktrees, or launch crew before the user answers. A reply like "fine" or "go" counts as approval; anything else, revise the plan and show it again.
 
@@ -106,6 +119,7 @@ Small missions (one crew member, or you doing it alone) may say so and go straig
 
 - **Subagent (default):** a subagent in this session, via the host's subagent tool. The filled-in assignment is its whole prompt.
 - **Worktree session:** for big assignments, or ones that touch areas other crew members change in parallel. Mechanics: `${CLAUDE_SKILL_DIR}/worktrees.md` (read it before using this mode).
+- **Mixed** (some of each): there's still one combined result, in the mission worktree. Subagent engineers work in the mission worktree too: their assignment's **Mode** gives its absolute path, and they change and check files only there. When a subagent reports, commit its work on `mc/<id>` in the mission worktree (`git -C "<mission worktree>" add` its owned files, then `git -C "<mission worktree>" commit`) before merging a crew branch or starting anything sequenced after it. Don't merge a crew branch there while a subagent is still changing files in it.
 - **At `recommend` autonomy, worktree mode is off.** Every assignment runs as a subagent, and the plan says so ("worktree mode is off at `recommend`"). Run no `git worktree` command.
 
 The assignment format is the same in both modes, so a subagent assignment can be promoted to a worktree session unchanged.
@@ -114,7 +128,7 @@ The assignment format is the same in both modes, so a subagent assignment can be
 
 ## 4. During flight
 
-After the plan is answered: set `status: flight`, create any tickets, then hand out assignments in the planned order.
+After the plan is answered: set `status: flight`; if `base:` is `none`, set it to the full hash `git -C "<root>" rev-parse HEAD` prints, and `## Pre-existing changes` to the paths `git -C "<root>" status --porcelain` prints now (or `none`). Then create any tickets and hand out assignments in the planned order.
 
 Fill the standing orders' park command with absolute paths at assignment time:
 - main repo: `<root>`;
@@ -130,9 +144,9 @@ As reports come back:
 
 ## 5. Land
 
-1. Collect every report and change. In worktree mode, merge the crew branches into `mc/<id>` inside the mission worktree (see `worktrees.md`); a merge conflict stops the landing.
+1. Collect every report and change. In worktree or mixed mode, every subagent's work is committed on `mc/<id>` and the crew branches are merged into it inside the mission worktree (see `worktrees.md`); a merge conflict stops the landing.
 2. Set `status: landed` in `state.md`.
-3. Run `/mission-control:verify` on the combined result (in worktree mode, the mission worktree). It records the verdict in `state.md`.
+3. Run `/mission-control:verify` on this mission's combined result (in worktree or mixed mode, the mission worktree). It records the verdict in `state.md`.
 4. Hand off: tell the user to run `/mission-control:go-no-go` (don't invoke it yourself), which briefs them and does what the autonomy level allows on "launch".
 
 If the user aborts: set `status: aborted`, leave any worktrees in place and list them.

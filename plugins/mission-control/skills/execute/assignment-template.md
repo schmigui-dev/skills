@@ -2,7 +2,7 @@
 
 Every crew assignment uses exactly these sections, in this order, in both modes. In subagent mode the filled-in text is the subagent's whole prompt. In worktree mode it is saved as `.mission-control/missions/<id>/assignments/<crew-id>.md` in the main repo. The same text works in either mode, so an assignment can be promoted from subagent to worktree unchanged.
 
-Fill every `<…>` before handing it out, with absolute paths. The Standing orders are fixed text: copy them verbatim, filling only the park command's absolute paths, crew id and mission id. Pick the **Mode** text that applies and drop the other.
+Fill every `<…>` before handing it out, with absolute paths. The Standing orders are fixed text: copy them verbatim, filling only the park command's absolute paths, crew id and mission id. Pick the **Mode** text that applies and drop the others.
 
 ~~~markdown
 # Assignment: <crew-id> · mission <mission-id>
@@ -31,6 +31,9 @@ Fill every `<…>` before handing it out, with absolute paths. The Standing orde
 ## Mode
 <subagent:>
 Subagent in the Captain's session. Other crew may be working in the same tree at the same time: touch only your Owns, and run only the checks listed in Verify with.
+
+<subagent in a mixed-mode mission:>
+Subagent in the Captain's session, working in the mission worktree "<abs mission worktree path>" (branch `mc/<mission-id>`), not in the main repo. Make every change and run every check there: use absolute paths under it, and run commands with `git -C "<abs mission worktree path>"` or `(cd "<abs mission worktree path>" && …)`. Setup or installs that Verify with needs (e.g. `npm install`) are fine there. Other crew may be working in the same tree at the same time: touch only your Owns, and run only the checks listed in Verify with. Don't commit, merge or switch branches: the Captain commits your work on `mc/<mission-id>`.
 
 <worktree session:>
 Worktree session in "<abs crew worktree path>", on branch `mc/<mission-id>--<crew-id>`. Work only there. Setup or installs that Verify with needs (e.g. `npm install`) are fine inside the worktree. When your work passes Verify with, commit it on your branch (`git add` your owned files, then `git commit`), then write your report, naming the commit hash(es). Don't merge, rebase, push or switch branches.

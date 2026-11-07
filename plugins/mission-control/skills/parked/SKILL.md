@@ -25,4 +25,5 @@ Conventions: `${CLAUDE_SKILL_DIR}/../../conventions.md`. This skill relies on: o
 When the user picks a number:
 - Show the full note (`park.sh get N`), then discuss/analyze it with them as a normal conversation. For a crew note, state the assumption the crew made and ask whether it holds, one question at a time.
 - When the discussion seems resolved (question answered, decision made, or user moves on), ask: `remove #N from parked? (y/n)`.
-- On yes: run `bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" remove N` and reply with its output (`removed #N`). Do not edit the file yourself.
+- On yes: run `bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" remove N` and reply with its output (`removed #N`). Do not edit the parked file yourself.
+- Removing a crew note closes the loop, as in `/mission-control:decisions`: in the note's mission (`<mc>/missions/<mission-id>/state.md`, with `<mc>` from `bash "${CLAUDE_SKILL_DIR}/../../scripts/mc-init.sh" --find`), mark its item `- [x] <question> · crew #N → <the answer>`, or add it that way if it isn't there, keeping every other line (rewrite the file with a Bash heredoc). If the answer differs from the crew's assumption, say so: the work has to change, so offer to send it back through `/mission-control:execute` (iterate).

@@ -13,9 +13,9 @@ Over a long session you make many small choices for the user. A summary that say
 
 ## 0. Find the current mission
 
-Look for `.mission-control/missions/*/state.md` at the git toplevel (else the current directory). The current mission is the most recent one whose `status:` isn't `launched` or `aborted`. If more than one qualifies, ask which (one question, naming each by id and title) and stop. If there's none, skip the mission parts below.
+Get `<mc>`, the absolute `.mission-control/` path in the main repo (also from inside a worktree), from `bash "${CLAUDE_SKILL_DIR}/../../scripts/mc-init.sh" --find` (it creates nothing; if that folder doesn't exist, there's no mission). Never use `git rev-parse --show-toplevel` for this: inside a worktree it gives the worktree. Look for `"<mc>/missions/"*/state.md`. The current mission is the most recent one whose `status:` isn't `launched` or `aborted`. If more than one qualifies, ask which (one question, naming each by id and title) and stop. If there's none, skip the mission parts below.
 
-In a mission, read its `state.md` (the open `- [ ]` items under `## Needs your call`) and `brief.md`, and list the crew's parked questions for it:
+In a mission, read its `state.md` (`mode`, `base`, the paths under `## Pre-existing changes`, and the open `- [ ]` items under `## Needs your call`) and `brief.md`, and list the crew's parked questions for it:
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" list --mission <mission-id> --crew-only
@@ -25,7 +25,7 @@ It prints one line per question, `- #N · <date> · [crew:<crew-id> · mission:<
 
 ## 1. Collect
 
-Go through the conversation, the diff (`git diff`, plus `git diff --staged` and new files when in a repo; in a worktree-mode mission, the mission branch against its base), and any files you produced. Collect everything in these categories:
+Go through the conversation, the diff (`git diff`, plus `git diff --staged` and new files when in a repo; in a mission, from its `base:` commit: `git -C "<parent of mc>" diff <base>` in subagent mode, leaving out the `## Pre-existing changes` files, or `git -C "<mission worktree>" diff <base>` in worktree or mixed mode), and any files you produced. Collect everything in these categories:
 
 - **Invented:** values, names, config, endpoints, limits, copy, or behavior you made up because nothing specified them. **These matter most.** Be honest about them.
 - **Defaults:** timeouts, sizes, sort orders, error handling, permissions, and anything else you picked a value for.

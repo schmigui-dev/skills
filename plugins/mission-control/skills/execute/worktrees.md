@@ -8,11 +8,11 @@ Creating the mission branch, crew branches and worktrees, and committing on them
 
 Shell variables don't survive between commands: compute these once and use the absolute values literally in every later command. Quote every path.
 
-- `<root>`: `git rev-parse --show-toplevel` from your session (the main repo).
+- `<root>`: the main repo, the parent directory of the `.mission-control/` path that `mc-init.sh` printed (not `git rev-parse --show-toplevel`, which inside a worktree gives the worktree).
 - `<repo>`: `basename "<root>"`.
 - `<parent>`: `dirname "<root>"`.
 - Mission worktree: `"<parent>/<repo>-mc-<mission-id>"`, on branch `mc/<mission-id>`.
-- Crew worktree: `"<parent>/<repo>-mc-<crew-id>"`, on branch `mc/<mission-id>--<crew-id>`. (Not `mc/<mission-id>/<crew-id>`: git can't hold a branch `mc/<mission-id>` and branches under `mc/<mission-id>/` at the same time.)
+- Crew worktree: `"<parent>/<repo>-mc-<mission-id>--<crew-id>"`, on branch `mc/<mission-id>--<crew-id>`. (Not `mc/<mission-id>/<crew-id>`: git can't hold a branch `mc/<mission-id>` and branches under `mc/<mission-id>/` at the same time.)
 - Assignment: `"<root>/.mission-control/missions/<mission-id>/assignments/<crew-id>.md"`.
 - Report: `"<root>/.mission-control/missions/<mission-id>/reports/<crew-id>.md"`.
 - Log: `"<root>/.mission-control/missions/<mission-id>/reports/<crew-id>.log"`.
@@ -30,17 +30,17 @@ Shell variables don't survive between commands: compute these once and use the a
 2. **Crew worktree**, created when that crew member launches (not earlier), from the mission branch as it is then, so a sequenced assignment starts from the merged work before it:
 
    ```bash
-   git -C "<root>" worktree add -b "mc/<mission-id>--<crew-id>" "<parent>/<repo>-mc-<crew-id>" "mc/<mission-id>"
+   git -C "<root>" worktree add -b "mc/<mission-id>--<crew-id>" "<parent>/<repo>-mc-<mission-id>--<crew-id>" "mc/<mission-id>"
    ```
 
 3. **Assignment file**: write the filled-in assignment template to the assignment path in the main repo (`mkdir -p` its `assignments/` and `reports/` folders first). Its **Mode** names the crew worktree and branch, and its **Brings back** names the report path, all absolute.
 
 ## Launch
 
-Use `crew-command` from `.mission-control/config.md` exactly as written (e.g. `claude -p`, `codex exec`, or Cursor's agent CLI). Run it in the background, with cwd = the crew worktree, this prompt, and stdout and stderr going to the log:
+Use `crew-command` from `.mission-control/config.md` exactly as written (e.g. `claude -p`, `codex exec`, or Cursor's agent CLI). Run it in the background, with cwd = the crew worktree (in a subshell, so your own session stays in the main repo), this prompt, and stdout and stderr going to the log:
 
 ```bash
-cd "<parent>/<repo>-mc-<crew-id>" && <crew-command> "Read <assignment path> and do it. Write your report to <report path>." > "<log path>" 2>&1
+( cd "<parent>/<repo>-mc-<mission-id>--<crew-id>" && <crew-command> "Read <assignment path> and do it. Write your report to <report path>." ) > "<log path>" 2>&1
 ```
 
 - **Never add flags to `crew-command`**, least of all permission or bypass flags. Permissions are the user's job: run exactly what's configured.
@@ -61,17 +61,17 @@ The report names the commit(s) the crew member made on its branch. Check the rep
 git -C "<root>" log --oneline "mc/<mission-id>..mc/<mission-id>--<crew-id>"
 ```
 
-Merge each finished crew branch in the mission worktree, in the planned order:
+In a mixed-mode mission, first commit any finished subagent work in the mission worktree (execute section 3), so the merge starts from a clean tree. Merge each finished crew branch in the mission worktree, in the planned order:
 
 ```bash
 git -C "<parent>/<repo>-mc-<mission-id>" merge --no-ff "mc/<mission-id>--<crew-id>"
 ```
 
 - **Conflict:** run `git -C "<parent>/<repo>-mc-<mission-id>" merge --abort`, stop, and add a **Needs your call** item to `state.md` naming the conflicting crew branches and files (source `plan`). Don't resolve it by guessing.
-- **Remove a crew worktree** only when its branch is merged into `mc/<mission-id>` and the worktree is clean (`git -C "<parent>/<repo>-mc-<crew-id>" status --porcelain` prints nothing):
+- **Remove a crew worktree** only when its branch is merged into `mc/<mission-id>` and the worktree is clean (`git -C "<parent>/<repo>-mc-<mission-id>--<crew-id>" status --porcelain` prints nothing):
 
   ```bash
-  git -C "<root>" worktree remove "<parent>/<repo>-mc-<crew-id>"
+  git -C "<root>" worktree remove "<parent>/<repo>-mc-<mission-id>--<crew-id>"
   ```
 
   Never use `--force`. A worktree that isn't clean or isn't merged stays, and you list it.

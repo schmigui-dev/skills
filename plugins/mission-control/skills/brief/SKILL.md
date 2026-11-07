@@ -71,7 +71,13 @@ Once approved, keep to it for the rest of the task:
 
 - If you hit a choice the brief doesn't cover **and** it touches something costly to get wrong (security, data, money, deploy, user-facing behavior, public APIs, anything hard to reverse), **stop and ask**. Never invent an answer for these.
 - For smaller choices, decide, keep going, and record them for `/mission-control:decisions`.
-- If the answer belongs to the human but isn't risky enough to stop for, park it instead of guessing: `/mission-control:park "the question"`.
+- If the answer belongs to the human but isn't risky enough to stop for, park it instead of guessing, with this command (the question on stdin), and keep going:
+
+  ```bash
+  bash "${CLAUDE_SKILL_DIR}/../../scripts/park.sh" add <<'PARKED_NOTE'
+  <the question>
+  PARKED_NOTE
+  ```
 - If the work starts to contradict the brief (scope creep, a different approach, an assumption turning out false), say so before continuing.
 - When finished, check against **Done means** and **Verified means**, and suggest `/mission-control:evidence`.
 
