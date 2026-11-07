@@ -8,7 +8,7 @@ From `plugins/mission-control/`:
 
 ```bash
 FLAGS="--scaffold --trust-plugin --allow-tools Write Edit Bash --judge-model sonnet --no-publish"
-claude plugin eval . $FLAGS                                  # all cases, 3 runs each
+claude plugin eval . $FLAGS --runs 3                         # all cases, 3 runs each
 claude plugin eval . $FLAGS --case smoke --runs 1
 ```
 

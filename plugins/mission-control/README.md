@@ -40,7 +40,7 @@ Commands are namespaced as `/mission-control:<command>`.
 | Landing | `/verify [what / how]` *(also natural language)* | Layered verification: each crew member's self-check, then a fresh reviewer who wrote none of the work, then the Captain's final checks against the brief's **Verified means**. Reports evidence with real output. |
 | Landing | `/evidence` | Shows the exact checks run and their real output first, then what each check proved and **didn't** prove, a verdict, and only then a one-line summary. |
 | Go/no-go | `/decisions` | Lists every choice you never made: invented values, defaults, interpretations, scope cuts, assumptions, plus the questions the crew parked. Anything that needs your call comes first. |
-| Go/no-go | `/quiz [n=5] [hard]` | Writes a short report on the change, then quizzes you one question at a time and grades strictly. Ship only on a perfect score. |
+| Go/no-go | `/quiz [scope] [n=5] [hard]` | Writes a short report on the change, then quizzes you one question at a time and grades strictly. Ship only on a perfect score. |
 | Go/no-go | `/go-no-go [launch]` | The launch briefing: verdict, what needs your call, what changed, how it's split into commits, the version bump and changelog entry, a recommendation, and what the Captain will do on "launch" at the current autonomy level. |
 | Any | `/park "note"` | Parks an idea or question without derailing the work. Replies `parked #N` and carries on. |
 | Any | `/parked [oldest] [crew] [mission <id>]` | Lists what's parked, yours and the crew's, and picks one to discuss. |
@@ -70,7 +70,7 @@ How far the Captain may go after you say "launch". Inside the mission, at any le
 | --- | --- | --- |
 | `recommend` | nothing on your branch or the remote. Proposes commits. Worktree mode is off | everything |
 | `commit` **(default)** | organizes local commits on your branch (merging the mission branch, if there is one) | push, PR, merge, deploy |
-| `push` | + pushes the branch, opens a PR | merge, deploy |
+| `push` | + pushes the branch (`mc/<mission-id>` if yours is the default branch), opens a PR | merge, deploy |
 | `merge` | + merges the PR | deploy |
 | `deploy` | + releases with the project's documented deploy command, writes the changelog and version | nothing (you're still briefed after) |
 
@@ -80,8 +80,10 @@ Set it per project in `.mission-control/config.md`, or per mission in the brief'
 # mission-control config
 
 autonomy: commit
-crew-command: claude -p --permission-mode acceptEdits --add-dir /path/to/your/repo
+crew-command: claude -p --add-dir /path/to/your/repo --allowedTools "Bash(npm test *),Bash(git add *),Bash(git commit *),Bash(PARKED_FILE=* bash *park.sh add *)" --permission-mode acceptEdits
 ```
+
+(See [Crew sessions](#crew-sessions) for what that command allows and why.)
 
 **Gates.** At every level from `commit` up, local commits included, the Captain acts only when:
 
@@ -90,6 +92,8 @@ crew-command: claude -p --permission-mode acceptEdits --add-dir /path/to/your/re
 - there are **no open parked crew questions** for the mission.
 
 If any gate fails, the Captain makes no commits and no merge, whatever the level. It stops and tells you what's blocking. At `recommend` nothing is executed anyway.
+
+**Your default branch is never pushed below `deploy`.** At `push` and `merge`, if your branch is the repo's default branch, the Captain pushes the work as a feature branch `mc/<mission-id>` and opens the PR from it. Your local default branch keeps the commits until the PR is merged.
 
 **Never inferred**, at any level: force-push, history rewrites, deleting remote branches, and a production deploy without a documented deploy command. Those need an explicit instruction from you in the session.
 
@@ -122,16 +126,23 @@ This parking lot is separate from the `parking-lot` plugin's. You can install bo
 By default the crew runs as subagents in your session. For big assignments, or ones that touch areas other crew members are changing in parallel, the Captain can run a crew member as a separate agent session in its own git worktree:
 
 - **Mission branch** `mc/<mission-id>`, in its own mission worktree at `../<repo>-mc-<mission-id>`.
-- **Crew branch** `mc/<mission-id>--<crew-id>`, in a crew worktree at `../<repo>-mc-<crew-id>`.
+- **Crew branch** `mc/<mission-id>--<crew-id>`, in a crew worktree at `../<repo>-mc-<mission-id>--<crew-id>`.
+- In a mission that mixes the two, subagent crew members also work in the mission worktree, and the Captain commits their work on the mission branch, so there's one combined result.
 - Crew branches merge into the mission branch inside the mission worktree. Your checkout is never switched. Your branch only changes on "launch".
 
-Worktree sessions start with `crew-command` from `.mission-control/config.md`, run in the background in the crew's worktree. Any agent CLI works (`claude -p`, `codex exec`, Cursor's agent CLI). A working example for Claude Code:
+Worktree sessions start with `crew-command` from `.mission-control/config.md`, run in the background in the crew's worktree. Any agent CLI works (`claude -p`, `codex exec`, Cursor's agent CLI). A working example for Claude Code, for a project tested with `npm test`:
 
 ```text
-crew-command: claude -p --permission-mode acceptEdits --add-dir <main repo path>
+crew-command: claude -p --add-dir <main repo path> --allowedTools "Bash(npm test *),Bash(git add *),Bash(git commit *),Bash(PARKED_FILE=* bash *park.sh add *)" --permission-mode acceptEdits
 ```
 
-The crew needs edit and test permissions in its worktree, plus write access to the main repo's `.mission-control/` for its report and parked questions.
+A crew member needs to:
+
+- **edit files** in its worktree: `--permission-mode acceptEdits` auto-approves edits, but not shell commands;
+- **run Bash** for its tests (`npm test`), for git (`git add`, `git commit` on its own branch) and for `park.sh` (parking questions): `--allowedTools` allows exactly those commands. Swap in your project's own test command, and add any setup it needs (e.g. `Bash(npm install *)`);
+- **write to the main repo's `.mission-control/`** for its report and parked questions: `--add-dir`.
+
+`--add-dir` and `--allowedTools` take several values, so keep a single-value flag such as `--permission-mode acceptEdits` last: the Captain appends the prompt after the command, and a list flag at the end would swallow it. You can grant the same permissions in the project's Claude Code settings instead of flags. Which way, and how much to allow, is your call. Check the rule syntax against your agent CLI's docs.
 
 **Permissions are your job.** The plugin runs `crew-command` exactly as written and never adds permission flags, least of all bypass flags. If a crew session fails on permissions, the Captain shows you the log and the exact command to run yourself. With no `crew-command` set, it prints the command for you to run in a new terminal and waits.
 

@@ -77,13 +77,14 @@ At the target project's root:
   parked.md         the parking lot (local)
   missions/<id>/    per-mission working files (local)
     brief.md        the confirmed brief (always, in both modes)
-    state.md        status + open "needs your call" items (always)
+    state.md        status, base commit, pre-existing changes, open "needs your call" items (always)
     assignments/<crew-id>.md   (worktree mode)
     reports/<crew-id>.md       (worktree mode)
 ```
 
 - **Mission id:** `YYYY-MM-DD-<short-slug>` from the brief's title. The Captain creates it when `execute` starts.
-- *My call:* **mission state is always saved**, in both modes, so the go/no-go gate works across sessions. `state.md` holds `status: planning | flight | landed | launched | aborted`, the verify verdict, and the list of open "needs your call" items. `decisions` and `go-no-go` add and resolve items there. **Current mission** = the most recent mission whose status isn't `launched` or `aborted`. If there's more than one, ask which.
+- *My call:* **mission state is always saved**, in both modes, so the go/no-go gate works across sessions. `state.md` holds `status: planning | flight | landed | launched | aborted`, `base: <commit hash>` (the commit the mission started from, set when the flight starts; every diff of mission work is taken from it), a `## Pre-existing changes` list (files already uncommitted when the flight started, or `none`: the user's, never committed as mission work), the verify verdict, and the list of open "needs your call" items. `decisions` and `go-no-go` add and resolve items there. **Current mission** = the most recent mission whose status isn't `launched` or `aborted`. If there's more than one, ask which. Iterating on a mission (go/no-go's iterate or re-run, or the user says so) reuses it: same id, status back to `planning`, its "needs your call" items kept. Only clearly new work starts a new mission (ask if unclear).
+- **Location:** always the **main** repo's `.mission-control/`, also from inside a mission or crew worktree. Skills find it through `mc-init.sh`, which resolves the main worktree from git's common dir, never through `git rev-parse --show-toplevel` (that gives the linked worktree).
 - Created lazily by whichever skill first needs it. Never create it for a task that doesn't need it.
 - *My call:* only `config.md` is committed. The parking lot and mission files are personal working state. If the user wants them committed, they edit `.mission-control/.gitignore`.
 
@@ -173,10 +174,11 @@ Show the flight plan as a playback ending "Tell me what's wrong." No code is tou
 - **Subagent (default):** a subagent in the current session, via the host's subagent tool. The assignment text is the subagent's whole prompt.
 - **Worktree session:** for big assignments, or assignments that touch areas other crew members are working on in parallel. **Off at `recommend` autonomy**: there, every assignment runs as a subagent.
   - **Mission branch:** `mc/<mission-id>`, created from the user's current branch when the first worktree is needed, in a dedicated mission worktree at `<parent>/<repo>-mc-<mission-id>` (`<parent>` = the main repo's parent directory). Crew branches merge into it there, never by switching the user's checkout.
-  - **Crew branch and worktree:** `git worktree add ../<repo>-mc-<crew-id> -b mc/<mission-id>--<crew-id> mc/<mission-id>`. The separator is `--`, not `/`: git can't hold both `mc/<mission-id>` and `mc/<mission-id>/<crew-id>` as refs.
+  - **Crew branch and worktree:** `git worktree add ../<repo>-mc-<mission-id>--<crew-id> -b mc/<mission-id>--<crew-id> mc/<mission-id>`. The separator is `--`, not `/`: git can't hold both `mc/<mission-id>` and `mc/<mission-id>/<crew-id>` as refs.
   - Write `.mission-control/missions/<id>/assignments/<crew-id>.md` in the **main** repo, and give the crew member the absolute path to it and to its report path.
   - Launch with `crew-command` from `config.md` (e.g. `claude -p`, `codex exec`, or Cursor's agent CLI), in the background, cwd = the worktree, prompt = "Read <assignment path> and do it. Write your report to <report path>." If `crew-command` is unset or launching isn't possible, print the exact command for the human to run in a new terminal, and wait.
-  - **Permissions are the user's job (user decision).** The plugin never adds permission flags, least of all bypass flags, to `crew-command`. It runs exactly what's configured. The README shows a working example, e.g. `claude -p --permission-mode acceptEdits --add-dir <main repo path>` (the crew needs edit and test permissions in its worktree, plus write access to the main repo's `.mission-control/` for its report and `park.sh`). If a crew session fails on permissions, the Captain reports the failure and prints the command for the user to run themselves.
+  - **Permissions are the user's job (user decision).** The plugin never adds permission flags, least of all bypass flags, to `crew-command`. It runs exactly what's configured. The README shows a working example, e.g. `claude -p --add-dir <main repo path> --allowedTools "Bash(npm test *),Bash(git add *),Bash(git commit *),Bash(PARKED_FILE=* bash *park.sh add *)" --permission-mode acceptEdits`. `acceptEdits` alone approves edits, not Bash: the crew needs edit permission in its worktree, Bash for its tests, git and `park.sh`, and write access to the main repo's `.mission-control/` for its report and parked questions. The user grants these by flags or settings; how much is their call. If a crew session fails on permissions, the Captain reports the failure and prints the command for the user to run themselves.
+  - **Mixed mode** (some subagents, some worktree sessions): subagent engineers work in the mission worktree too (the absolute path is in their assignment's **Mode**), and the Captain commits their work on `mc/<mission-id>`, so there's one combined result.
   - Worktrees are removed after a successful merge. On abort they're left in place and listed.
 - *My call:* the assignment format is the same in both modes, so a subagent assignment can be promoted to a worktree session unchanged.
 
@@ -199,6 +201,8 @@ Show the flight plan as a playback ending "Tell me what's wrong." No code is tou
 
 **Output:** the `evidence` report format (checks with verbatim output, proves / doesn't prove, not checked, verdict). `verify` is the process. `evidence` stays as the standalone report command.
 
+**Which mission:** `verify` uses a mission only when it runs as execute's landing step, when the request or conversation names the mission, or when the current session ran it. Otherwise it verifies this session's work and doesn't touch `state.md`, even if a mission is in flight. In a worktree or mixed-mode mission, checks run in the mission worktree (via `git -C` or a subshell, never by moving the session there; installing dependencies there is fine), and reviewer fixes are made there and committed on `mc/<mission-id>` before the final checks.
+
 **Scaling:** outside a mission (a single agent, a single change), `verify` runs layers 2 and 3 only. For trivial changes, layer 3 only, and it says the reviewer was skipped.
 
 **Defining verified when nothing says how:** propose a verify plan as a playback ("Tell me what's wrong.") before running it, unless the checks are obvious and read-only (tests, lint, typecheck, build).
@@ -220,9 +224,9 @@ Show the flight plan as a playback ending "Tell me what's wrong." No code is tou
 Ends: "Launch, iterate, rethink, or re-run? Tell me what's wrong."
 
 - **Launch:** act up to the autonomy level, and recommend the rest.
-- **Iterate:** back to `execute` with the human's notes as a new or amended assignment.
+- **Iterate:** back to `execute` with the human's notes as a new or amended assignment. `execute` reuses the mission.
 - **Rethink:** back to `brief` (or `explore`).
-- **Re-run:** run `execute` again with the same brief, e.g. after an environment fix.
+- **Re-run:** run `execute` again with the same brief, e.g. after an environment fix. `execute` reuses the mission.
 
 Optionally offers `quiz` before launch when the change is risky.
 
@@ -234,12 +238,14 @@ Optionally offers `quiz` before launch when the change is risky.
 |---|---|---|
 | `recommend` | nothing on the user's branch or remote; proposes commits. Worktree mode off | everything |
 | `commit` **(default)** | organizes local commits on the user's branch (merging the mission branch, if there is one) | push, PR, merge, deploy |
-| `push` | + pushes the branch, opens a PR | merge, deploy |
+| `push` | + pushes the branch (`mc/<mission-id>` if it's the default branch), opens a PR | merge, deploy |
 | `merge` | + merges the PR | deploy |
 | `deploy` | + releases/deploys with the project's documented command, writes the changelog and version | none (still briefed after) |
 
 - **Precedence:** brief's **Autonomy** > `config.md` > default `commit`.
-- **Gates (every level from `commit` up, user decision):** the action happens only if the verdict is **verified**, there are **no open "needs your call" items**, and **no open parked crew questions** for the mission. Otherwise the Captain makes no commits and no merge, stops, and reports what's blocking, whatever the level.
+- **Gates (every level from `commit` up, user decision):** the action happens only if the verdict is **verified**, there are **no open "needs your call" items**, and **no open parked crew questions** for the mission. Otherwise the Captain makes no commits and no merge, stops, and reports what's blocking, whatever the level. In worktree or mixed mode, uncommitted changes in the mission worktree also block launch, and are listed as what must be resolved.
+- **Default branch:** at `push` and `merge`, if the user's branch is the repo's default branch, the Captain pushes a feature branch `mc/<mission-id>` and opens the PR from it. The default branch is never pushed below `deploy`.
+- **Mission files only:** commits hold the mission's work (the diff from `base:`), never the files under `## Pre-existing changes`. The launch report lists the mission and crew branches left behind; nothing deletes them.
 - **Never inferred:** force-push, history rewrite, deleting remote branches, and a prod deploy without a documented deploy command. These need an explicit instruction in the session, whatever the level.
 - Commits follow the repo's existing message conventions and identity. Commit messages carry no attribution beyond what the host requires.
 
@@ -264,13 +270,14 @@ Set **per mission in the brief** (user decision), not in `config.md`. The brief'
 ### `park` / `parked` (adapted from parking-lot)
 
 - Copy `parking-lot/scripts/park.sh` into `mission-control/scripts/park.sh` and adapt it:
-  - Default file: `<project root>/.mission-control/parked.md` (project root = `git rev-parse --show-toplevel`, else cwd). `PARKED_FILE` still overrides.
+  - Default file: `<project root>/.mission-control/parked.md` (project root = the main worktree, resolved by `mc-init.sh` from git's common dir so a mission or crew worktree finds the main repo's file; else the toplevel; else cwd). `PARKED_FILE` still overrides.
+  - `add` drops one pair of quotes wrapping the whole note (`"note"` → `note`).
   - Keep the lock and atomic writes. Parallel crew members write here.
   - Commands kept: `add`, `remove`, `get`, and a `list` filter for one mission's crew notes if that's simpler than parsing in the skill.
   - `add` accepts optional tags: `--crew <crew-id>` and `--mission <id>`.
 - Line format: `- #N · YYYY-MM-DD · [crew:<crew-id> · mission:<id>] <note> — assumed: <assumption>`. Human notes have no tag block.
 - `park "note"`: same behavior as parking-lot's (reply `parked #N`, never discuss it, resume the task).
-- `parked [oldest] [crew] [mission <id>]`: list and discuss as in parking-lot. Crew notes show their tags. Offers removal once a note is resolved.
+- `parked [oldest] [crew] [mission <id>]`: list and discuss as in parking-lot. Crew notes show their tags. Offers removal once a note is resolved; removing a crew note also marks its `crew #N` item resolved in the mission's `state.md`, and offers iterate if the answer differs from the crew's assumption.
 - `go-no-go` and `decisions` read the crew notes for the current mission. Resolving one there removes it.
 - `parking-lot` itself is unchanged and stays in the marketplace. The two parking lots are independent.
 
