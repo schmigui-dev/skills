@@ -99,7 +99,7 @@ Mission: <id> · autonomy: <level> (<where it came from>) · mode: <subagents | 
 ### Skipped   (steps skipped because the stakes don't justify them, if any)
 ```
 
-In every mode, check `git -C "<root>" status --porcelain`. Files it lists are pre-existing changes, not the mission's: name them in the plan. Then:
+In every mode, check `git -C "<root>" status --porcelain`. Files it lists are pre-existing changes, not the mission's: name them in the plan. **On a reused mission** (`base:` already set), the pre-existing changes are only the paths in its recorded `## Pre-existing changes`; any other changed path is the mission's own earlier work, so don't list it, raise it or ask to commit or stash it. Then:
 - **Worktree or mixed mode:** the mission branch is cut from HEAD, so they aren't included. Say so under **Needs your call** (commit or stash first, or go without those changes).
 - **Subagent mode:** the crew works in the same tree. If an assignment owns a file that's already changed, the mission's edits can't be told apart from the user's: say so under **Needs your call** (commit or stash it first). Other pre-existing changes are only listed.
 
@@ -119,7 +119,7 @@ Small missions (one crew member, or you doing it alone) may say so and go straig
 
 - **Subagent (default):** a subagent in this session, via the host's subagent tool. The filled-in assignment is its whole prompt.
 - **Worktree session:** for big assignments, or ones that touch areas other crew members change in parallel. Mechanics: `${CLAUDE_SKILL_DIR}/worktrees.md` (read it before using this mode).
-- **Mixed** (some of each): there's still one combined result, in the mission worktree. Subagent engineers work in the mission worktree too: their assignment's **Mode** gives its absolute path, and they change and check files only there. When a subagent reports, commit its work on `mc/<id>` in the mission worktree (`git -C "<mission worktree>" add` its owned files, then `git -C "<mission worktree>" commit`) before merging a crew branch or starting anything sequenced after it. Don't merge a crew branch there while a subagent is still changing files in it.
+- **Mixed** (some of each): there's still one combined result, in the mission worktree. Create the mission branch and mission worktree (`${CLAUDE_SKILL_DIR}/worktrees.md`, step 1) before handing out any assignment, even if a subagent goes first. Subagent engineers work in the mission worktree too: their assignment's **Mode** gives its absolute path, and they change and check files only there. When a subagent reports, commit its work on `mc/<id>` in the mission worktree (`git -C "<mission worktree>" add` its owned files, then `git -C "<mission worktree>" commit`) before merging a crew branch or starting anything sequenced after it. Don't merge a crew branch there while a subagent is still changing files in it.
 - **At `recommend` autonomy, worktree mode is off.** Every assignment runs as a subagent, and the plan says so ("worktree mode is off at `recommend`"). Run no `git worktree` command.
 
 The assignment format is the same in both modes, so a subagent assignment can be promoted to a worktree session unchanged.

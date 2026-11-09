@@ -19,7 +19,7 @@ Shell variables don't survive between commands: compute these once and use the a
 
 ## Set up
 
-1. **Mission branch and mission worktree**, once, when the first worktree is needed. The branch is cut from HEAD, so uncommitted work in the user's tree is not included (the plan already raised this if the tree was dirty).
+1. **Mission branch and mission worktree**, once, when the first worktree is needed; in a mixed mission, before any assignment is handed out (subagent engineers work in it too). The branch is cut from HEAD, so uncommitted work in the user's tree is not included (the plan already raised this if the tree was dirty).
 
    ```bash
    git -C "<root>" worktree add -b "mc/<mission-id>" "<parent>/<repo>-mc-<mission-id>" HEAD
