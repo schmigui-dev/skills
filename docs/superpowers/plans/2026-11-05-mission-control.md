@@ -22,14 +22,14 @@
 - Cross-references use `/mission-control:<skill>`. No `/no-surrender:` or bare `/brief` references remain anywhere in the plugin.
 - No tracker-specific code (no Notion/Jira/Linear names in instructions except as examples). No dependency on Orca, superpowers or any agent app.
 - The plugin never adds permission flags to `crew-command`.
-- State paths: `.mission-control/{.gitignore,config.md,parked.md,missions/<id>/{brief.md,state.md,assignments/,reports/}}`. Mission id `YYYY-MM-DD-<slug>`. Branches `mc/<mission-id>` and `mc/<mission-id>/<crew-id>`. Worktree path `../<repo>-mc-<crew-id>`.
+- State paths: `.mission-control/{.gitignore,config.md,parked.md,missions/<id>/{brief.md,state.md,assignments/,reports/}}`. Mission id `YYYY-MM-DD-<slug>`. Branches `mc/<mission-id>` (mission) and `mc/<mission-id>--<crew-id>` (crew; `--`, not `/`, since git can't hold both `mc/<id>` and `mc/<id>/x` as refs). Crew worktree path `<parent>/<repo>-mc-<mission-id>--<crew-id>`. Mission worktree `<parent>/<repo>-mc-<mission-id>`, where crew branches merge into `mc/<mission-id>`; the user's checkout is never switched.
 - Autonomy levels exactly `recommend | commit | push | merge | deploy`, default `commit`. Precedence: brief **Autonomy** > `config.md` > default.
 - Stop guard env vars: `MISSION_CONTROL_STOP_GUARD=off` and legacy `NO_SURRENDER_STOP_GUARD=off` both disable it. Message prefix `mission-control:`.
 - Evals: same harness conventions as `plugins/same-page/evals` (`case.yaml` with `context.scaffold_script: scaffold.sh`, `prompt.md` frontmatter `max_turns`/`allowed_tools`, `graders/*.md` llm graders). git doesn't run inside the eval sandbox, so git-dependent behavior is graded from the transcript. Run with `--judge-model sonnet`.
 
 ## Review Focus
 
-1. **Crew in a worktree parks to the worktree, not the main repo.** In a worktree, `git rev-parse --show-toplevel` is the worktree. Expected: every assignment's standing orders set `PARKED_FILE=<main repo>/.mission-control/parked.md` explicitly. Pinned in Task 2 (test that `PARKED_FILE` wins) and Task 6 (grader on the assignment text).
+1. **Crew in a worktree parks to the worktree, not the main repo.** In a worktree, `git rev-parse --show-toplevel` is the worktree. Expected: every assignment's standing orders set `PARKED_FILE=<main repo>/.mission-control/parked.md` explicitly, and `mc-init.sh` resolves the main worktree (from git's common dir), so skills and `park.sh` run inside a worktree still find the main repo's `.mission-control/`. Pinned in Task 2 (test that `PARKED_FILE` wins) and Task 6 (grader on the assignment text).
 2. **Many crew members park at once.** Expected: unique, consecutive IDs and no lost lines. Pinned in Task 2 (`test_parallel_adds`).
 3. **"check" in an ordinary sentence** ("check out this file and explain it"). Expected: `verify` does not fire. Pinned in Task 7 (`verify-no-trigger`).
 4. **Two unfinished missions.** Expected: `go-no-go`/`decisions` ask which one instead of picking. Pinned in Task 8 (`go-no-go-two-missions`).
@@ -100,7 +100,7 @@ Spec: "Project-local state", "park / parked".
 - Test: `plugins/mission-control/scripts/test-scripts.sh`
 
 **Interfaces:**
-- Produces `mc-init.sh [dir]`: resolves the project root (`dir`, else `git rev-parse --show-toplevel`, else `pwd`), creates `<root>/.mission-control/` if missing, writes `.mission-control/.gitignore` if missing with exactly the three lines `*`, `!.gitignore`, `!config.md`, and prints the absolute `.mission-control` path. Idempotent.
+- Produces `mc-init.sh [--find] [dir]`: resolves the project root (`dir`, else the main worktree from `git rev-parse --git-common-dir`, so linked worktrees resolve to the main repo, else `git rev-parse --show-toplevel`, else `pwd`); `--find` only prints the path and creates nothing. Otherwise it creates `<root>/.mission-control/` if missing, writes `.mission-control/.gitignore` if missing with exactly the three lines `*`, `!.gitignore`, `!config.md`, and prints the absolute `.mission-control` path. Idempotent.
 - Produces `park.sh`, with the same lock and atomic-write mechanics as parking-lot's. Default file `$(mc-init.sh)/parked.md`. `PARKED_FILE` overrides it, and then `mc-init.sh` is **not** called.
   - `park.sh add [--crew <crew-id>] [--mission <mission-id>] [--assumed <text>]`, note on stdin → `parked #N`. Line formats:
     - human: `- #N · YYYY-MM-DD · <note>`
@@ -265,10 +265,14 @@ status: planning | flight | landed | launched | aborted
 autonomy: <effective level>
 mode: subagents | worktrees | mixed
 mission-branch: mc/<id> | none
+base: <commit hash> | none
 verdict: none | verified | partially verified | unverified
 
+## Pre-existing changes
+- <path>   (or the single line: none)
+
 ## Needs your call
-- [ ] <item> · <source: decisions | crew #N | changelog>
+- [ ] <item> · <source: plan | crew #N | decisions | changelog>
 ```
 
 A resolved item becomes `- [x] … → <the user's answer>`.
