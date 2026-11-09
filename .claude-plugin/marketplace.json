@@ -15,6 +15,11 @@
       "name": "no-surrender",
       "source": "./plugins/no-surrender",
       "description": "Stay on top of what agents build. Brief before, surface blind spots, demand evidence, expose the agent's decisions, and quiz yourself before you ship."
+    },
+    {
+      "name": "same-page",
+      "source": "./plugins/same-page",
+      "description": "Get code and business on the same page. Build a domain glossary from any business doc or code, check code for drift, translate requests into domain terms, verify business rules are tested, and rename terms safely."
     }
   ]
 }
