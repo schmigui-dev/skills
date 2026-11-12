@@ -48,6 +48,24 @@ IDs are never reused until you run `/reindexpark`.
 
 Every command that changes the list goes through `scripts/park.sh`, which takes a lock and writes atomically, so parallel sessions never share an ID or overwrite each other's notes. Set `PARKED_FILE` to use a different file.
 
+## MCP backend (optional)
+
+Set `PARKED_BACKEND=corteza` to keep notes in an MCP server instead of the local file, e.g. in
+`~/.claude/settings.json`:
+
+```json
+{ "env": { "PARKED_BACKEND": "corteza" } }
+```
+
+The commands then call the server's `park_idea`, `list_ideas`, `get_idea`, `update_idea` and
+`remove_idea` tools. [corteza](https://corteza.dev) exposes them at `https://corteza.dev/mcp`, and your
+notes show up as Ideas in its dashboard; any server with the same tools works. Same commands, with two
+differences: `/mergepark` is emulated (update the lowest ID, remove the rest) and `/reindexpark` does
+nothing, since the server never reuses IDs. Unset it to go back to `~/.claude/parked.md`. Existing local
+notes are not moved.
+
+Details: [references/mcp-backend.md](references/mcp-backend.md).
+
 ## License
 
 MIT
