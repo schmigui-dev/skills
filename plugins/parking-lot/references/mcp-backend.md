@@ -6,7 +6,7 @@ is one (`https://corteza.dev/mcp`, the notes show up as Ideas in its dashboard).
 
 | Tool | Used by |
 | --- | --- |
-| `park_idea` (`text`) → `parked #N in <Org>` | `/park` |
+| `park_idea` (`text`) → `parked #N in <Org>` | `/park`, `/migratepark` |
 | `list_ideas` (`status`) → one line per note | `/parked` |
 | `get_idea` (`number`) → the full note | `/parked`, `/repark`, `/mergepark` |
 | `update_idea` (`number`, `text`) | `/repark`, `/mergepark` |

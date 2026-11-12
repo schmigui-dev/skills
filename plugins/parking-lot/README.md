@@ -29,6 +29,7 @@ Commands are namespaced as `/parking-lot:<command>`.
 | `/repark <id> add "x" at the end` | Edit a note in place. Also `prepend`, `replace "a" with "b"`, `remove "x"`, `insert "x" after "y"`. |
 | `/mergepark <id> <id> [id...]` | Merge into the lowest ID. Notes are joined with ` \| `. |
 | `/reindexpark` | Renumber notes 1..n, oldest first, to close gaps. |
+| `/migratepark` | Move local notes to the MCP backend (see below). Asks first; each note is removed from the file only after the server saved it. |
 
 All commands run only when you type them. Claude never invokes them on its own.
 
@@ -61,8 +62,9 @@ The commands then call the server's `park_idea`, `list_ideas`, `get_idea`, `upda
 `remove_idea` tools. [corteza](https://corteza.dev) exposes them at `https://corteza.dev/mcp`, and your
 notes show up as Ideas in its dashboard; any server with the same tools works. Same commands, with two
 differences: `/mergepark` is emulated (update the lowest ID, remove the rest) and `/reindexpark` does
-nothing, since the server never reuses IDs. Unset it to go back to `~/.claude/parked.md`. Existing local
-notes are not moved.
+nothing, since the server never reuses IDs. Unset it to go back to `~/.claude/parked.md`. To move existing local notes
+to the server, run `/migratepark`: notes keep their text but get new IDs, and their dates become the
+day they're moved.
 
 Details: [references/mcp-backend.md](references/mcp-backend.md).
 
